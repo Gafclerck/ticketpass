@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ticketpass/core/routing/app_router.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -10,11 +11,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'TicketPass',
-      home: Scaffold(
-        body: Center(child: Text('TicketPass')),
-      ),
+      debugShowCheckedModeBanner: false,
+      routerConfig: router,
     );
   }
 }
