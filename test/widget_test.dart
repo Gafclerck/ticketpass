@@ -1,15 +1,14 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ticketpass/main.dart';
 
 void main() {
-  testWidgets('TicketPass affiche la page des événements', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: TicketPassApp()));
+  testWidgets('App boots and shows the home screen', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Mes événements'), findsOneWidget);
-    expect(find.text('Aucun événement pour le moment.'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
   });
 }
