@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:ticketpass/core/routing/app_routes.dart';
 import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
@@ -11,8 +13,6 @@ import 'package:ticketpass/core/widgets/glass_card.dart';
 import 'package:ticketpass/core/widgets/page_header.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import '../../domain/entities/event.dart';
-import '../pages/create_event_page.dart';
-import '../pages/edit_event_page.dart';
 import '../providers/event_providers.dart';
 import '../widgets/event_card.dart';
 
@@ -24,10 +24,7 @@ class EventsPage extends ConsumerWidget {
   const EventsPage({super.key});
 
   Future<void> _openCreate(BuildContext context, WidgetRef ref) async {
-    final isCreated = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const CreateEventPage()),
-    );
+    final isCreated = await context.push<bool>(AppRoutes.eventCreate);
 
     if (isCreated == true) {
       ref.invalidate(myEventsProvider(ref.read(currentUserProvider).id));
@@ -40,9 +37,8 @@ class EventsPage extends ConsumerWidget {
     WidgetRef ref,
     Event event,
   ) async {
-    final isUpdated = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => EditEventPage(event: event)),
+    final isUpdated = await context.push<bool>(
+      '${AppRoutes.eventEdit}?id=${event.id}',
     );
 
     if (isUpdated == true) {

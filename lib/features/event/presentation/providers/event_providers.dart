@@ -6,6 +6,7 @@ import '../../domain/repositories/event_repository.dart';
 import '../../domain/usecases/create_event.dart';
 import '../../domain/usecases/delete_event.dart';
 import '../../domain/usecases/get_discover_events.dart';
+import '../../domain/usecases/get_event_by_id.dart';
 import '../../domain/usecases/get_my_events.dart';
 import '../../domain/usecases/update_event.dart';
 
@@ -42,4 +43,12 @@ final discoverEventsProvider = FutureProvider<List<Event>>((ref) {
 
 final getDiscoverEventsProvider = Provider<GetDiscoverEvents>((ref) {
   return GetDiscoverEvents(ref.watch(eventRepositoryProvider));
+});
+
+final eventProvider = FutureProvider.family<Event, String>((ref, eventId) {
+  return ref.watch(getEventByIdProvider).call(eventId);
+});
+
+final getEventByIdProvider = Provider<GetEventById>((ref) {
+  return GetEventById(ref.watch(eventRepositoryProvider));
 });

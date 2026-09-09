@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/widgets/app_bottom_navigation_bar.dart';
 import 'package:ticketpass/core/widgets/app_shell.dart';
+import 'package:ticketpass/features/event/presentation/pages/create_event_page.dart';
+import 'package:ticketpass/features/event/presentation/pages/edit_event_page.dart';
 import 'package:ticketpass/features/home/presentation/screens/home_page.dart';
 import 'package:ticketpass/features/event/presentation/screens/events_page.dart';
 import 'package:ticketpass/features/ticket/presentation/screens/my_tickets_page.dart';
@@ -13,7 +15,7 @@ import 'app_routes.dart';
 final GoRouter router = GoRouter(
   initialLocation: AppRoutes.home,
   routes: [
-    // routes hors StatefulShellBranch : pas de barre de navigation
+    // routes racine hors StatefulShellBranch : pas de barre de navigation
     GoRoute(
       path: '${AppRoutes.ticketDetail}:id',
       builder: (context, state) => AppShell(
@@ -21,6 +23,20 @@ final GoRouter router = GoRouter(
           ticketId: state.pathParameters['id']!,
         ),
       ),
+    ),
+    GoRoute(
+      path: AppRoutes.eventCreate,
+      builder: (context, state) => const AppShell(child: CreateEventPage()),
+    ),
+    GoRoute(
+      path: AppRoutes.eventEdit,
+      builder: (context, state) {
+        final eventId = state.uri.queryParameters['id'];
+        if (eventId == null) {
+          return const SizedBox.shrink();
+        }
+        return AppShell(child: EditEventPage(eventId: eventId));
+      },
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

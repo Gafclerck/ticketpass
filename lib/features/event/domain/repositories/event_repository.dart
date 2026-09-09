@@ -16,4 +16,8 @@ abstract class EventRepository {
 
   /// Catalogue public (découverte) — événements visibles de tous.
   Future<List<Event>> getDiscoverEvents();
+
+  /// Détail d'un événement (nécessaire à la page d'édition et à
+  /// l'EventDetailScreen à venir).
+  Future<Event> getEventById(String eventId);
 }

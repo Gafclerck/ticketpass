@@ -14,7 +14,6 @@ import 'package:ticketpass/core/widgets/user_avatar.dart';
 import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
 import 'package:ticketpass/features/event/domain/entities/event.dart';
 import 'package:ticketpass/features/event/domain/entities/event_type.dart';
-import 'package:ticketpass/features/event/presentation/pages/create_event_page.dart';
 import 'package:ticketpass/features/event/presentation/providers/event_providers.dart';
 import 'package:ticketpass/features/event/presentation/widgets/event_card.dart';
 
@@ -70,13 +69,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                 const SizedBox(height: AppSpacing.lg),
                 _SegmentedControl(
                   selectedIndex: _segmentIndex,
-                  onChanged: (index) {
+                  onChanged: (index) async {
                     if (index == 2) {
-                      // Create → écran de création d'événement
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CreateEventPage()),
+                      // Create → écran de création d'événement (route plein-écran)
+                      final isCreated = await context.push<bool>(
+                        AppRoutes.eventCreate,
                       );
+                      if (isCreated == true) {
+                        ref.invalidate(discoverEventsProvider);
+                      }
                       return;
                     }
                     setState(() => _segmentIndex = index);

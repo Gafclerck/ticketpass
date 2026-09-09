@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/theme/app_theme.dart';
@@ -113,7 +114,7 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
         const SnackBar(content: Text('Événement créé avec succès.')),
       );
 
-      Navigator.pop(context, true);
+      context.pop(true);
     } catch (_) {
       if (!mounted) return;
 
@@ -148,7 +149,6 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
               PageHeader(
                 title: 'Créer un événement',
                 showBack: true,
-                onBack: () => Navigator.pop(context),
               ),
               const SizedBox(height: AppSpacing.lg),
               TextFormField(

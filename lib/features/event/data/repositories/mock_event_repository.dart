@@ -121,4 +121,19 @@ class MockEventRepository implements EventRepository {
   Future<List<Event>> getDiscoverEvents() async {
     return List.unmodifiable(_catalogue);
   }
+
+  @override
+  Future<Event> getEventById(String eventId) async {
+    for (final item in _catalogue) {
+      if (item.id == eventId) return item;
+    }
+
+    for (final events in _eventsByUserId.values) {
+      for (final item in events) {
+        if (item.id == eventId) return item;
+      }
+    }
+
+    throw Exception('Événement introuvable.');
+  }
 }
