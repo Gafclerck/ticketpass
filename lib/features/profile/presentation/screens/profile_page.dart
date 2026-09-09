@@ -8,6 +8,7 @@ import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/theme/app_typography.dart';
 import 'package:ticketpass/core/widgets/app_button.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
+import 'package:ticketpass/core/widgets/page_header.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/core/widgets/user_avatar.dart';
 import 'package:ticketpass/features/auth/domain/entities/user.dart';
@@ -47,7 +48,11 @@ class ProfilePage extends ConsumerWidget {
             AppSpacing.bottomClearanceWithNav,
           ),
           children: [
-            _SectionTitle(title: 'Profil', onBack: () => context.go(AppRoutes.home)),
+            PageHeader(
+              title: 'Profil',
+              showBack: true,
+              onBack: () => context.go(AppRoutes.home),
+            ),
             const SizedBox(height: AppSpacing.lg),
             _UserCard(user: user),
             const SizedBox(height: AppSpacing.lg),
@@ -84,42 +89,6 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  final VoidCallback onBack;
-
-  const _SectionTitle({required this.title, required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        PressableScale(
-          onTap: onBack,
-          pressedScale: 0.9,
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.glassSubtle,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: AppColors.glassBorder),
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 20,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Text(title, style: Theme.of(context).textTheme.headlineLarge),
-      ],
-    );
-  }
-}
-
-/// Carte identité — spec §8 UserCard : avatar 80, nom (Playfair 26), email.
 class _UserCard extends StatelessWidget {
   final User user;
 

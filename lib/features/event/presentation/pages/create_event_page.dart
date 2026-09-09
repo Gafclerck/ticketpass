@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ticketpass/core/providers/current_user_provider.dart';
+import 'package:ticketpass/core/theme/app_spacing.dart';
+import 'package:ticketpass/core/theme/app_theme.dart';
+import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/page_header.dart';
+import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_status.dart';
 import '../../domain/entities/event_type.dart';
@@ -100,7 +104,7 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
     );
 
     try {
-      final userId = ref.read(currentUserIdProvider);
+      final userId = ref.read(currentUserProvider).id;
       await ref.read(createEventProvider).call(event, userId: userId);
 
       if (!mounted) return;
@@ -131,13 +135,22 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
     final timeLabel = TimeOfDay.fromDateTime(_selectedDate).format(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Créer un événement')),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
+        bottom: false,
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: AppTheme.pagePadding(
+              bottom: AppSpacing.bottomClearanceNoNav,
+            ),
             children: [
+              PageHeader(
+                title: 'Créer un événement',
+                showBack: true,
+                onBack: () => Navigator.pop(context),
+              ),
+              const SizedBox(height: AppSpacing.lg),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -208,40 +221,32 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
                 },
               ),
               const SizedBox(height: 16),
-              ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  side: const BorderSide(color: Colors.grey),
-                ),
-                title: const Text('Date de l’événement'),
-                subtitle: Text(dateLabel),
-                trailing: const Icon(Icons.calendar_today),
+              // date/heure en lecture seule : comportement input DS (verre,
+              // focus) + pickers système
+              TextFormField(
+                readOnly: true,
                 onTap: _pickDate,
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  side: const BorderSide(color: Colors.grey),
+                decoration: InputDecoration(
+                  labelText: 'Date de l’événement',
+                  suffixIcon: const Icon(Icons.calendar_today),
+                  hintText: dateLabel,
                 ),
-                title: const Text('Heure de début'),
-                subtitle: Text(timeLabel),
-                trailing: const Icon(Icons.schedule),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                readOnly: true,
                 onTap: _pickTime,
+                decoration: InputDecoration(
+                  labelText: 'Heure de début',
+                  suffixIcon: const Icon(Icons.schedule),
+                  hintText: timeLabel,
+                ),
               ),
               const SizedBox(height: 24),
-              FilledButton(
+              AppButton(
+                label: 'Créer l’événement',
+                fullWidth: true,
                 onPressed: _isSaving ? null : _saveEvent,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Créer l’événement'),
-                ),
               ),
             ],
           ),

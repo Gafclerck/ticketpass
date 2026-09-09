@@ -6,10 +6,12 @@ import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/routing/app_routes.dart';
 import 'package:ticketpass/core/widgets/app_search_field.dart';
+import 'package:ticketpass/core/widgets/empty_state.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/core/widgets/user_avatar.dart';
 
+import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
 import 'package:ticketpass/features/event/domain/entities/event.dart';
 import 'package:ticketpass/features/event/domain/entities/event_type.dart';
 import 'package:ticketpass/features/event/presentation/pages/create_event_page.dart';
@@ -41,6 +43,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(discoverEventsProvider);
+    final currentUser = ref.watch(currentUserProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -60,7 +63,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                 bottom: AppSpacing.bottomClearanceWithNav,
               ),
               children: [
-                _Header(onAvatarTap: () => context.go(AppRoutes.profile)),
+                _Header(
+                  userName: currentUser.fullName,
+                  onAvatarTap: () => context.go(AppRoutes.profile),
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 _SegmentedControl(
                   selectedIndex: _segmentIndex,
@@ -103,14 +109,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 if (filtered.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-                    child: Center(
-                      child: Text(
-                        'Aucun événement trouvé',
-                        style: TextStyle(color: AppColors.textMuted, fontSize: 14),
-                      ),
-                    ),
+                  EmptyState(
+                    icon: Icons.search_off,
+                    title: 'Aucun événement trouvé',
+                    subtitle: 'Essayez une autre recherche ou une autre '
+                        'catégorie.',
                   )
                 else
                   ...filtered.map(
@@ -145,9 +148,10 @@ class _HomePageState extends ConsumerState<HomePage> {
 }
 
 class _Header extends StatelessWidget {
+  final String userName;
   final VoidCallback onAvatarTap;
 
-  const _Header({required this.onAvatarTap});
+  const _Header({required this.userName, required this.onAvatarTap});
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +191,7 @@ class _Header extends StatelessWidget {
         PressableScale(
           onTap: onAvatarTap,
           pressedScale: 0.9,
-          child: const UserAvatar(size: 44),
+          child: UserAvatar(size: 44, name: userName),
         ),
       ],
     );

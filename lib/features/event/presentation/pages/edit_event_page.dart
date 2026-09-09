@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ticketpass/core/theme/app_colors.dart';
+import 'package:ticketpass/core/theme/app_spacing.dart';
+import 'package:ticketpass/core/theme/app_theme.dart';
+import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/page_header.dart';
+import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_type.dart';
 import '../providers/event_providers.dart';
@@ -205,22 +211,40 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
     final timeLabel = TimeOfDay.fromDateTime(_selectedDate).format(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Modifier l’événement'),
-        actions: [
-          IconButton(
-            onPressed: _isLoading ? null : _deleteEvent,
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Supprimer',
-          ),
-        ],
-      ),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
+        bottom: false,
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: AppTheme.pagePadding(
+              bottom: AppSpacing.bottomClearanceNoNav,
+            ),
             children: [
+              PageHeader(
+                title: 'Modifier l’événement',
+                showBack: true,
+                onBack: () => Navigator.pop(context),
+                trailing: PressableScale(
+                  onTap: _isLoading ? null : _deleteEvent,
+                  pressedScale: 0.9,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.glassSubtle,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: AppColors.errorBorder),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: AppColors.errorText,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Titre'),
@@ -290,27 +314,30 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
                 },
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : _selectDate,
-                icon: const Icon(Icons.calendar_today),
-                label: Text('Date : $dateLabel'),
+              TextFormField(
+                readOnly: true,
+                onTap: _isLoading ? null : _selectDate,
+                decoration: InputDecoration(
+                  labelText: 'Date de l’événement',
+                  suffixIcon: const Icon(Icons.calendar_today),
+                  hintText: dateLabel,
+                ),
               ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : _selectTime,
-                icon: const Icon(Icons.schedule),
-                label: Text('Heure : $timeLabel'),
+              const SizedBox(height: 16),
+              TextFormField(
+                readOnly: true,
+                onTap: _isLoading ? null : _selectTime,
+                decoration: InputDecoration(
+                  labelText: 'Heure de début',
+                  suffixIcon: const Icon(Icons.schedule),
+                  hintText: timeLabel,
+                ),
               ),
               const SizedBox(height: 24),
-              FilledButton(
+              AppButton(
+                label: 'Enregistrer les modifications',
+                fullWidth: true,
                 onPressed: _isLoading ? null : _saveEvent,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Enregistrer les modifications'),
               ),
             ],
           ),
