@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/widgets/app_bottom_navigation_bar.dart';
+import 'package:ticketpass/core/widgets/app_shell.dart';
 import 'package:ticketpass/features/home/presentation/screens/home_page.dart';
 import 'package:ticketpass/features/event/presentation/screens/events_page.dart';
 import 'package:ticketpass/features/ticket/presentation/screens/my_tickets_page.dart';
@@ -15,31 +15,35 @@ final GoRouter router = GoRouter(
     // routes hors StatefulShellBranch : pas de barre de navigation
     GoRoute(
       path: '${AppRoutes.ticketDetail}:id',
-      builder: (context, state) => TicketDetailPage(
-        ticketId: state.pathParameters['id']!,
+      builder: (context, state) => AppShell(
+        child: TicketDetailPage(
+          ticketId: state.pathParameters['id']!,
+        ),
       ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return Scaffold(
-          backgroundColor: AppColors.background,
-          body: Stack(
-            children: [
-              // navigationShell EST le widget qui affiche la page active
-              navigationShell,
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 16,
-                child: AppBottomNavigationBar(
-                  currentIndex: navigationShell.currentIndex,
-                  onTap: (index) => navigationShell.goBranch(
-                    index,
-                    initialLocation: index == navigationShell.currentIndex,
+          backgroundColor: Colors.transparent,
+          body: AppShell(
+            child: Stack(
+              children: [
+                // navigationShell EST le widget qui affiche la page active
+                navigationShell,
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: AppBottomNavigationBar(
+                    currentIndex: navigationShell.currentIndex,
+                    onTap: (index) => navigationShell.goBranch(
+                      index,
+                      initialLocation: index == navigationShell.currentIndex,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
