@@ -13,4 +13,7 @@ abstract class EventRepository {
   Future<void> deleteEvent(String eventId);
 
   Future<List<Event>> getMyEvents(String userId);
+
+  /// Catalogue public (découverte) — événements visibles de tous.
+  Future<List<Event>> getDiscoverEvents();
 }
