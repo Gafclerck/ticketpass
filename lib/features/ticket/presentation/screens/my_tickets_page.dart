@@ -6,7 +6,7 @@ import 'package:ticketpass/core/providers/current_user_provider.dart';
 import 'package:ticketpass/core/routing/app_routes.dart';
 import '../../domain/entities/ticket.dart';
 import '../providers/ticket_providers.dart';
-import '../widgets/status_badge.dart';
+import '../widgets/ticket_status_badge.dart';
 
 /// UC9 — Historique des billets possédés par l'utilisateur courant.
 class MyTicketsPage extends ConsumerWidget {

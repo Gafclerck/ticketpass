@@ -4,7 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../domain/entities/ticket.dart';
 import '../providers/ticket_providers.dart';
-import '../widgets/status_badge.dart';
+import '../widgets/ticket_status_badge.dart';
 
 /// UC8 — Consultation d'un billet (détail + QR de présentation au contrôle).
 class TicketDetailPage extends ConsumerWidget {
