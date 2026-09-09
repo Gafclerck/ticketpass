@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ticketpass/core/providers/current_user_provider.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/event_status.dart';
+import '../../domain/entities/event_type.dart';
 import '../providers/event_providers.dart';
 
 class CreateEventPage extends ConsumerStatefulWidget {
@@ -16,25 +19,28 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
 
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _capacityController = TextEditingController();
+  final _eventPlaceController = TextEditingController();
+  final _maxPlacesController = TextEditingController();
+  final _brandNameController = TextEditingController();
 
-  DateTime _eventDate = DateTime.now().add(const Duration(days: 1));
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  EventType _eventType = EventType.other;
   bool _isSaving = false;
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _locationController.dispose();
-    _capacityController.dispose();
+    _eventPlaceController.dispose();
+    _maxPlacesController.dispose();
+    _brandNameController.dispose();
     super.dispose();
   }
 
   Future<void> _pickDate() async {
     final selectedDate = await showDatePicker(
       context: context,
-      initialDate: _eventDate,
+      initialDate: _selectedDate,
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
@@ -42,12 +48,31 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
     if (selectedDate == null || !mounted) return;
 
     setState(() {
-      _eventDate = DateTime(
+      _selectedDate = DateTime(
         selectedDate.year,
         selectedDate.month,
         selectedDate.day,
-        _eventDate.hour,
-        _eventDate.minute,
+        _selectedDate.hour,
+        _selectedDate.minute,
+      );
+    });
+  }
+
+  Future<void> _pickTime() async {
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedDate),
+    );
+
+    if (selectedTime == null || !mounted) return;
+
+    setState(() {
+      _selectedDate = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        selectedTime.hour,
+        selectedTime.minute,
       );
     });
   }
@@ -57,22 +82,26 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
 
     setState(() => _isSaving = true);
 
-    final now = DateTime.now();
-
     final event = Event(
       id: '',
-      organizerId: 'demo-organizer-id',
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      date: _eventDate,
-      location: _locationController.text.trim(),
-      capacity: int.parse(_capacityController.text.trim()),
-      createdAt: now,
-      updatedAt: now,
+      eventDate: DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+      ),
+      startTime: _selectedDate,
+      type: _eventType,
+      brandName: _brandNameController.text.trim(),
+      eventPlace: _eventPlaceController.text.trim(),
+      maxPlaces: int.parse(_maxPlacesController.text.trim()),
+      status: EventStatus.upcoming,
     );
 
     try {
-      await ref.read(createEventProvider).call(event);
+      final userId = ref.read(currentUserIdProvider);
+      await ref.read(createEventProvider).call(event, userId: userId);
 
       if (!mounted) return;
 
@@ -98,7 +127,8 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
   Widget build(BuildContext context) {
     final dateLabel = MaterialLocalizations.of(
       context,
-    ).formatMediumDate(_eventDate);
+    ).formatMediumDate(_selectedDate);
+    final timeLabel = TimeOfDay.fromDateTime(_selectedDate).format(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Créer un événement')),
@@ -112,7 +142,6 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Titre de l’événement',
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -125,10 +154,7 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Description'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'La description est obligatoire.';
@@ -138,11 +164,8 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Lieu',
-                  border: OutlineInputBorder(),
-                ),
+                controller: _eventPlaceController,
+                decoration: const InputDecoration(labelText: 'Lieu'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Le lieu est obligatoire.';
@@ -152,18 +175,36 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _capacityController,
+                controller: _maxPlacesController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Capacité',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Capacité max'),
                 validator: (value) {
-                  final capacity = int.tryParse(value ?? '');
-                  if (capacity == null || capacity <= 0) {
+                  final maxPlaces = int.tryParse(value ?? '');
+                  if (maxPlaces == null || maxPlaces <= 0) {
                     return 'Entre une capacité valide.';
                   }
                   return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _brandNameController,
+                decoration: const InputDecoration(labelText: 'Nom de marque'),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<EventType>(
+                initialValue: _eventType,
+                decoration: const InputDecoration(labelText: 'Type'),
+                items: EventType.values
+                    .map((type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type.label),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _eventType = value);
+                  }
                 },
               ),
               const SizedBox(height: 16),
@@ -176,6 +217,17 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
                 subtitle: Text(dateLabel),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _pickDate,
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  side: const BorderSide(color: Colors.grey),
+                ),
+                title: const Text('Heure de début'),
+                subtitle: Text(timeLabel),
+                trailing: const Icon(Icons.schedule),
+                onTap: _pickTime,
               ),
               const SizedBox(height: 24),
               FilledButton(

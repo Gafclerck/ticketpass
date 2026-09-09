@@ -30,7 +30,7 @@ final getMyEventsProvider = Provider<GetMyEvents>((ref) {
 
 final myEventsProvider = FutureProvider.family<List<Event>, String>((
   ref,
-  organizerId,
+  userId,
 ) {
-  return ref.watch(getMyEventsProvider).call(organizerId);
+  return ref.watch(getMyEventsProvider).call(userId);
 });

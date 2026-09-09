@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ticketpass/core/providers/current_user_provider.dart';
 import '../../domain/entities/event.dart';
 import '../pages/create_event_page.dart';
 import '../pages/edit_event_page.dart';
@@ -9,11 +10,10 @@ import '../providers/event_providers.dart';
 class EventsPage extends ConsumerWidget {
   const EventsPage({super.key});
 
-  static const _organizerId = 'demo-organizer-id';
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(myEventsProvider(_organizerId));
+    final userId = ref.watch(currentUserIdProvider);
+    final eventsAsync = ref.watch(myEventsProvider(userId));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -31,7 +31,7 @@ class EventsPage extends ConsumerWidget {
 
           return RefreshIndicator(
             onRefresh: () async {
-              ref.invalidate(myEventsProvider(_organizerId));
+              ref.invalidate(myEventsProvider(userId));
             },
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -42,7 +42,7 @@ class EventsPage extends ConsumerWidget {
                 return _EventCard(
                   event: event,
                   onUpdated: () {
-                    ref.invalidate(myEventsProvider(_organizerId));
+                    ref.invalidate(myEventsProvider(userId));
                   },
                 );
               },
@@ -58,7 +58,7 @@ class EventsPage extends ConsumerWidget {
           );
 
           if (isCreated == true) {
-            ref.invalidate(myEventsProvider(_organizerId));
+            ref.invalidate(myEventsProvider(userId));
           }
         },
         child: const Icon(Icons.add),
@@ -77,7 +77,7 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateLabel = MaterialLocalizations.of(
       context,
-    ).formatMediumDate(event.date);
+    ).formatMediumDate(event.eventDate);
 
     return Card(
       child: ListTile(
@@ -94,8 +94,9 @@ class _EventCard extends StatelessWidget {
         leading: const CircleAvatar(child: Icon(Icons.event)),
         title: Text(event.title),
         subtitle: Text(
-          '$dateLabel\n${event.location} • ${event.capacity} places',
+          '$dateLabel\n${event.eventPlace} • ${event.maxPlaces} places',
         ),
+        trailing: Text(event.status.label),
         isThreeLine: true,
       ),
     );

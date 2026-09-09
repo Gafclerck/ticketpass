@@ -6,7 +6,7 @@ class CreateEvent {
 
   const CreateEvent(this.repository);
 
-  Future<Event> call(Event event) {
-    return repository.createEvent(event);
+  Future<Event> call(Event event, {required String userId}) {
+    return repository.createEvent(event, userId: userId);
   }
 }

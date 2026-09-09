@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/event.dart';
+import '../../domain/entities/event_type.dart';
 import '../providers/event_providers.dart';
 
 class EditEventPage extends ConsumerStatefulWidget {
@@ -18,10 +19,12 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
 
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _locationController;
-  late final TextEditingController _capacityController;
+  late final TextEditingController _eventPlaceController;
+  late final TextEditingController _maxPlacesController;
+  late final TextEditingController _brandNameController;
 
   late DateTime _selectedDate;
+  late EventType _eventType;
   bool _isLoading = false;
 
   @override
@@ -32,19 +35,26 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
     _descriptionController = TextEditingController(
       text: widget.event.description,
     );
-    _locationController = TextEditingController(text: widget.event.location);
-    _capacityController = TextEditingController(
-      text: widget.event.capacity.toString(),
+    _eventPlaceController = TextEditingController(
+      text: widget.event.eventPlace,
     );
-    _selectedDate = widget.event.date;
+    _maxPlacesController = TextEditingController(
+      text: widget.event.maxPlaces.toString(),
+    );
+    _brandNameController = TextEditingController(
+      text: widget.event.brandName,
+    );
+    _selectedDate = widget.event.startTime;
+    _eventType = widget.event.type;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _locationController.dispose();
-    _capacityController.dispose();
+    _eventPlaceController.dispose();
+    _maxPlacesController.dispose();
+    _brandNameController.dispose();
     super.dispose();
   }
 
@@ -63,7 +73,32 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
 
     if (pickedDate != null) {
       setState(() {
-        _selectedDate = pickedDate;
+        _selectedDate = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          _selectedDate.hour,
+          _selectedDate.minute,
+        );
+      });
+    }
+  }
+
+  Future<void> _selectTime() async {
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedDate),
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        _selectedDate = DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
       });
     }
   }
@@ -78,10 +113,16 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
     final updatedEvent = widget.event.copyWith(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      location: _locationController.text.trim(),
-      capacity: int.parse(_capacityController.text.trim()),
-      date: _selectedDate,
-      updatedAt: DateTime.now(),
+      eventDate: DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+      ),
+      startTime: _selectedDate,
+      eventPlace: _eventPlaceController.text.trim(),
+      maxPlaces: int.parse(_maxPlacesController.text.trim()),
+      brandName: _brandNameController.text.trim(),
+      type: _eventType,
     );
 
     try {
@@ -161,6 +202,7 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
     final dateLabel = MaterialLocalizations.of(
       context,
     ).formatMediumDate(_selectedDate);
+    final timeLabel = TimeOfDay.fromDateTime(_selectedDate).format(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -181,10 +223,7 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
             children: [
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Titre',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Titre'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Le titre est obligatoire.';
@@ -196,10 +235,7 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Description'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'La description est obligatoire.';
@@ -209,11 +245,8 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Lieu',
-                  border: OutlineInputBorder(),
-                ),
+                controller: _eventPlaceController,
+                decoration: const InputDecoration(labelText: 'Lieu'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Le lieu est obligatoire.';
@@ -223,19 +256,37 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _capacityController,
+                controller: _maxPlacesController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Capacité',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Capacité max'),
                 validator: (value) {
-                  final capacity = int.tryParse(value ?? '');
+                  final maxPlaces = int.tryParse(value ?? '');
 
-                  if (capacity == null || capacity <= 0) {
+                  if (maxPlaces == null || maxPlaces <= 0) {
                     return 'Entre une capacité supérieure à 0.';
                   }
                   return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _brandNameController,
+                decoration: const InputDecoration(labelText: 'Nom de marque'),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<EventType>(
+                initialValue: _eventType,
+                decoration: const InputDecoration(labelText: 'Type'),
+                items: EventType.values
+                    .map((type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type.label),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _eventType = value);
+                  }
                 },
               ),
               const SizedBox(height: 16),
@@ -243,6 +294,12 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
                 onPressed: _isLoading ? null : _selectDate,
                 icon: const Icon(Icons.calendar_today),
                 label: Text('Date : $dateLabel'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _isLoading ? null : _selectTime,
+                icon: const Icon(Icons.schedule),
+                label: Text('Heure : $timeLabel'),
               ),
               const SizedBox(height: 24),
               FilledButton(
