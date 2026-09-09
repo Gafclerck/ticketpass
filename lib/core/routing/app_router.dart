@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/widgets/app_bottom_navigation_bar.dart';
 import 'package:ticketpass/core/widgets/app_shell.dart';
 import 'package:ticketpass/features/home/presentation/screens/home_page.dart';
@@ -30,15 +31,22 @@ final GoRouter router = GoRouter(
               children: [
                 // navigationShell EST le widget qui affiche la page active
                 navigationShell,
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                  child: AppBottomNavigationBar(
-                    currentIndex: navigationShell.currentIndex,
-                    onTap: (index) => navigationShell.goBranch(
-                      index,
-                      initialLocation: index == navigationShell.currentIndex,
+                // barre flottante dans un SafeArea : au-dessus de l'encoche
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SafeArea(
+                    minimum: const EdgeInsets.fromLTRB(
+                      16,
+                      0,
+                      16,
+                      AppSpacing.navBarBottomOffset,
+                    ),
+                    child: AppBottomNavigationBar(
+                      currentIndex: navigationShell.currentIndex,
+                      onTap: (index) => navigationShell.goBranch(
+                        index,
+                        initialLocation: index == navigationShell.currentIndex,
+                      ),
                     ),
                   ),
                 ),

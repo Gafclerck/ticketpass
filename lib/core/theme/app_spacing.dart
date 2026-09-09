@@ -14,8 +14,13 @@ abstract class AppSpacing {
   // Constraints globaux (spec §9)
   static const double pageHorizontal = lg; // px-5 = 20
   static const double pageTop = xxxl + xs; // pt-12 = 48
-  static const double bottomClearanceWithNav = 112; // pb-28
+  static const double bottomClearanceWithNav = navBarClearance + lg; // pb-28
   static const double bottomClearanceNoNav = xxxl; // pb-10 = 40
+
+  // Barre de navigation flottante (router + clearance des pages onglets)
+  static const double navBarHeight = 76;
+  static const double navBarBottomOffset = 16;
+  static const double navBarClearance = navBarHeight + navBarBottomOffset; // 92
 
   // Gaps entre colonnes d'une même carte (gap-4)
   static const double cardGap = md;

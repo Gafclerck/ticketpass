@@ -3,8 +3,10 @@ import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/theme/app_typography.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
+import 'package:ticketpass/core/widgets/status_badge.dart';
 
 import '../../domain/entities/event.dart';
+import '../../domain/entities/event_status.dart';
 
 /// Carte événement — spec `FLUTTER_PROTOTYPE_SPEC.md` §5.3 (variante défaut).
 ///
@@ -93,13 +95,23 @@ class EventCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      '${event.maxPlaces} places · ${event.status.label}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${event.maxPlaces} places',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        StatusBadge(
+                          label: event.status.label,
+                          variant: _statusVariant(event.status),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -109,5 +121,13 @@ class EventCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static StatusBadgeVariant _statusVariant(EventStatus status) {
+    return switch (status) {
+      EventStatus.upcoming => StatusBadgeVariant.green,
+      EventStatus.ongoing => StatusBadgeVariant.blue,
+      EventStatus.passed => StatusBadgeVariant.gray,
+    };
   }
 }

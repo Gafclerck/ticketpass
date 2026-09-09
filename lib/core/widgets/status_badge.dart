@@ -18,17 +18,17 @@ class StatusBadge extends StatelessWidget {
       StatusBadgeVariant.blue => (
           const Color(0x33148CFA),
           AppColors.primary,
-          AppColors.primaryBorder,
+          const Color(0x4D148CFA),
         ),
       StatusBadgeVariant.green => (
           const Color(0x3322C55E),
           AppColors.successText,
-          const Color(0x4D22C55E),
+          AppColors.successBorder,
         ),
       StatusBadgeVariant.red => (
           const Color(0x33EF4444),
           AppColors.errorText,
-          const Color(0x4DEF4444),
+          AppColors.errorBorder,
         ),
       StatusBadgeVariant.gray => (
           const Color(0x1AFFFFFF),
@@ -46,10 +46,10 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: foreground,
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
