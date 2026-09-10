@@ -7,6 +7,8 @@ void main() {
   testWidgets('App boots and shows the home screen', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
 
+    await tester.pumpAndSettle();
+
     expect(find.text('TicketPass'), findsOneWidget);
   });
 }

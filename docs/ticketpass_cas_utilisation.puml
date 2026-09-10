@@ -1,0 +1,100 @@
+@startuml TicketPass_UseCases
+left to right direction
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor White
+  BorderColor #666666
+}
+
+actor Utilisateur
+actor Organisateur
+actor "Agent de contrôle" as Agent
+actor "Porteur de billet" as Porteur
+actor "Firebase\n(Auth / Firestore / FCM)" as Firebase
+actor "Moteur de synchronisation\n(Outbox / SyncQueue)" as Sync
+
+Organisateur --|> Agent
+Organisateur --|> Utilisateur
+Agent --|> Utilisateur
+Porteur --|> Utilisateur
+
+rectangle "Epic 1 - Gestion des événements" {
+  usecase "UC1\nCréer un événement" as UC1
+  usecase "UC2\nModifier / supprimer un événement" as UC2
+  usecase "UC3\nConsulter mes événements" as UC3
+  usecase "UC17 (NOUVEAU)\nConsulter les statistiques d'un événement" as UC17
+}
+
+rectangle "Epic 2 - Génération & gestion des billets" {
+  usecase "UC4\nGénérer des billets" as UC4
+  usecase "UC5\nGénérer le QR code sécurisé" as UC5
+  usecase "UC6\nConsulter la liste des billets" as UC6
+  usecase "UC18 (NOUVEAU)\nRévoquer un billet" as UC18
+  usecase "UC19 (NOUVEAU)\nDistribuer les billets aux porteurs" as UC19
+}
+
+rectangle "Epic 3 - Expérience du porteur de billet" {
+  usecase "UC7\nRecevoir / importer un billet" as UC7
+  usecase "UC8\nConsulter mon billet" as UC8
+  usecase "UC9\nHistorique de mes billets" as UC9
+  usecase "UC20 (NOUVEAU)\nRecevoir des notifications" as UC20
+  usecase "UC21 (NOUVEAU)\nTransférer un billet" as UC21
+}
+
+rectangle "Epic 4 - Validation & contrôle d'accès" {
+  usecase "UC10\nScanner un billet" as UC10
+  usecase "UC11\nValider un billet" as UC11
+  usecase "UC12\nValider un billet hors-ligne" as UC12
+  usecase "UC13\nSynchroniser les billets validés" as UC13
+  usecase "UC22 (NOUVEAU)\nConsulter le tableau de bord de contrôle" as UC22
+  usecase "UC23 (NOUVEAU)\nGérer les conflits de synchronisation" as UC23
+}
+
+rectangle "Epic 5 - Infrastructure & qualité" {
+  usecase "UC14\nAuthentification / gestion utilisateur" as UC14
+  usecase "UC15\nSetup base de données locale" as UC15
+  usecase "UC16\nTests, documentation & démo" as UC16
+  usecase "UC24 (NOUVEAU)\nGérer les rôles et permissions" as UC24
+  usecase "UC25 (NOUVEAU)\nGérer mon profil" as UC25
+}
+
+Organisateur --> UC1
+Organisateur --> UC2
+Organisateur --> UC3
+Organisateur --> UC17
+Organisateur --> UC4
+Organisateur --> UC5
+Organisateur --> UC6
+Organisateur --> UC18
+Organisateur --> UC19
+Organisateur --> UC24
+
+Agent --> UC10
+Agent --> UC11
+Agent --> UC12
+Agent --> UC13
+Agent --> UC22
+Agent --> UC23
+
+Porteur --> UC7
+Porteur --> UC8
+Porteur --> UC9
+Porteur --> UC20
+Porteur --> UC21
+
+Utilisateur --> UC14
+Utilisateur --> UC25
+
+Sync --> UC13
+Sync --> UC23
+Firebase --> UC14
+Firebase --> UC13
+Firebase --> UC20
+
+UC4 .> UC5 : <<include>>
+UC10 .> UC11 : <<include>>
+UC12 .> UC11 : <<extend>>
+UC13 .> UC23 : <<include>>
+UC19 .> UC4 : <<extend>>
+
+@enduml
