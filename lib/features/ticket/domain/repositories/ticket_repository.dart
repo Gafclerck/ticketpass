@@ -12,4 +12,12 @@ abstract class TicketRepository {
   Future<Ticket> getTicket(String ticketId);
 
   Future<List<Ticket>> getMyTickets(String userId);
+
+  //   UC4 - Ajout de la methode, generateTickets
+
+  Future<List<Ticket>> generateTickets(String eventId, int quantity);
+
+  // UC4 -  Afficher les tickets génèrés d'un organisateur
+
+  Future<List<Ticket>> getTicketsForEvent(String eventId);
 }

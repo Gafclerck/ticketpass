@@ -1,3 +1,4 @@
+import 'package:ticketpass/core/security/ticket_signature_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/ticket.dart';
@@ -15,8 +16,10 @@ class FakeTicketRepository implements TicketRepository {
   /// Latence simulée (ms) pour tester les états de chargement.
   final Duration latency;
 
-  FakeTicketRepository({List<Ticket>? seed, this.latency = const Duration(milliseconds: 200)})
-      : _tickets = List.of(seed ?? const []);
+  FakeTicketRepository({
+    List<Ticket>? seed,
+    this.latency = const Duration(milliseconds: 200),
+  }) : _tickets = List.of(seed ?? const []);
 
   /// Jeu de données de démonstration pour l'utilisateur [demoUserId].
   factory FakeTicketRepository.demo({
@@ -25,13 +28,43 @@ class FakeTicketRepository implements TicketRepository {
   }) {
     final tickets = <Ticket>[
       // Billets importables (status: unused, aucun propriétaire).
-      _make(id: 'ticket-0001', status: TicketStatus.unused, userId: ''),
-      _make(id: 'ticket-0002', status: TicketStatus.unused, userId: ''),
+      _make(
+        id: 'ticket-0001',
+        status: TicketStatus.unused,
+        userId: '',
+        eventId: 'demo-event-id',
+      ),
+      _make(
+        id: 'ticket-0002',
+        status: TicketStatus.unused,
+        userId: '',
+        eventId: 'demo-event-id',
+      ),
       // Billets déjà possédés par l'utilisateur de démo.
-      _make(id: 'ticket-0003', status: TicketStatus.valid, userId: demoUserId),
-      _make(id: 'ticket-0004', status: TicketStatus.used, userId: demoUserId),
-      _make(id: 'ticket-0005', status: TicketStatus.revoked, userId: demoUserId),
-      _make(id: 'ticket-0006', status: TicketStatus.invalid, userId: demoUserId),
+      _make(
+        id: 'ticket-0003',
+        status: TicketStatus.valid,
+        userId: demoUserId,
+        eventId: 'demo-event-id',
+      ),
+      _make(
+        id: 'ticket-0004',
+        status: TicketStatus.used,
+        userId: demoUserId,
+        eventId: 'demo-event-id',
+      ),
+      _make(
+        id: 'ticket-0005',
+        status: TicketStatus.revoked,
+        userId: demoUserId,
+        eventId: 'demo-event-id',
+      ),
+      _make(
+        id: 'ticket-0006',
+        status: TicketStatus.invalid,
+        userId: demoUserId,
+        eventId: 'demo-event-id',
+      ),
     ];
     return FakeTicketRepository(seed: tickets, latency: latency);
   }
@@ -40,15 +73,17 @@ class FakeTicketRepository implements TicketRepository {
     required String id,
     required TicketStatus status,
     required String userId,
+    required String eventId,
   }) {
     final uniqueCode = const Uuid().v4();
+    final signature = TicketSignatureService.sign(id, eventId);
     return Ticket(
       id: id,
       status: status,
       uniqueCode: uniqueCode,
-      qrSignature: 'TICKETPASS::$uniqueCode',
+      qrSignature: signature,
       userId: userId,
-      eventId: 'demo-event-id',
+      eventId: eventId,
     );
   }
 
@@ -59,7 +94,10 @@ class FakeTicketRepository implements TicketRepository {
   }
 
   @override
-  Future<Ticket> importTicket(String uniqueCode, {required String userId}) async {
+  Future<Ticket> importTicket(
+    String uniqueCode, {
+    required String userId,
+  }) async {
     await _simulateLatency();
 
     final index = _tickets.indexWhere((t) => t.uniqueCode == uniqueCode);
@@ -105,5 +143,33 @@ class FakeTicketRepository implements TicketRepository {
     return _tickets
         .where((ticket) => ticket.userId == userId)
         .toList(growable: false);
+  }
+
+  @override
+  Future<List<Ticket>> getTicketsForEvent(String eventId) async {
+    await _simulateLatency();
+
+    return _tickets
+        .where((ticket) => ticket.eventId == eventId)
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<Ticket>> generateTickets(String eventId, int quantity) async {
+    await _simulateLatency();
+
+    final generated = List.generate(
+      quantity,
+      (_) => _make(
+        id: const Uuid().v4(),
+        status: TicketStatus.unused,
+        userId: '',
+        eventId: eventId,
+      ),
+    );
+
+    _tickets.addAll(generated);
+
+    return generated;
   }
 }
