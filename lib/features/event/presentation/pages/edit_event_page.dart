@@ -1,27 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:ticketpass/core/theme/app_colors.dart';
+import 'package:ticketpass/core/theme/app_spacing.dart';
+import 'package:ticketpass/core/theme/app_theme.dart';
+import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/page_header.dart';
+import 'package:ticketpass/core/widgets/pressable_scale.dart';
+import '../../../ticket/presentation/providers/ticket_providers.dart';
+import '../../../../core/routing/app_routes.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/event_type.dart';
 import '../providers/event_providers.dart';
 
-class EditEventPage extends ConsumerStatefulWidget {
-  final Event event;
+/// UC — Édition d'un événement (route racine, hors barre de navigation).
+///
+/// Charge l'événement par id (deep-linkable, fondation de l'EventDetail),
+/// puis affiche le formulaire une fois les données disponibles.
+class EditEventPage extends ConsumerWidget {
+  final String eventId;
 
-  const EditEventPage({super.key, required this.event});
+  const EditEventPage({super.key, required this.eventId});
 
   @override
-  ConsumerState<EditEventPage> createState() => _EditEventPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eventAsync = ref.watch(eventProvider(eventId));
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: eventAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('Erreur : $error')),
+        data: (event) => _EditEventForm(event: event),
+      ),
+    );
+  }
 }
 
-class _EditEventPageState extends ConsumerState<EditEventPage> {
+class _EditEventForm extends ConsumerStatefulWidget {
+  final Event event;
+
+  const _EditEventForm({required this.event});
+
+  @override
+  ConsumerState<_EditEventForm> createState() => _EditEventFormState();
+}
+
+class _EditEventFormState extends ConsumerState<_EditEventForm> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _locationController;
-  late final TextEditingController _capacityController;
+  late final TextEditingController _eventPlaceController;
+  late final TextEditingController _maxPlacesController;
+  late final TextEditingController _brandNameController;
 
   late DateTime _selectedDate;
+  late EventType _eventType;
   bool _isLoading = false;
 
   @override
@@ -32,19 +68,24 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
     _descriptionController = TextEditingController(
       text: widget.event.description,
     );
-    _locationController = TextEditingController(text: widget.event.location);
-    _capacityController = TextEditingController(
-      text: widget.event.capacity.toString(),
+    _eventPlaceController = TextEditingController(
+      text: widget.event.eventPlace,
     );
-    _selectedDate = widget.event.date;
+    _maxPlacesController = TextEditingController(
+      text: widget.event.maxPlaces.toString(),
+    );
+    _brandNameController = TextEditingController(text: widget.event.brandName);
+    _selectedDate = widget.event.startTime;
+    _eventType = widget.event.type;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _locationController.dispose();
-    _capacityController.dispose();
+    _eventPlaceController.dispose();
+    _maxPlacesController.dispose();
+    _brandNameController.dispose();
     super.dispose();
   }
 
@@ -63,7 +104,32 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
 
     if (pickedDate != null) {
       setState(() {
-        _selectedDate = pickedDate;
+        _selectedDate = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          _selectedDate.hour,
+          _selectedDate.minute,
+        );
+      });
+    }
+  }
+
+  Future<void> _selectTime() async {
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedDate),
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        _selectedDate = DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
       });
     }
   }
@@ -78,17 +144,23 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
     final updatedEvent = widget.event.copyWith(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      location: _locationController.text.trim(),
-      capacity: int.parse(_capacityController.text.trim()),
-      date: _selectedDate,
-      updatedAt: DateTime.now(),
+      eventDate: DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+      ),
+      startTime: _selectedDate,
+      eventPlace: _eventPlaceController.text.trim(),
+      maxPlaces: int.parse(_maxPlacesController.text.trim()),
+      brandName: _brandNameController.text.trim(),
+      type: _eventType,
     );
 
     try {
       await ref.read(updateEventProvider).call(updatedEvent);
 
       if (mounted) {
-        Navigator.pop(context, true);
+        context.pop(true);
       }
     } catch (error) {
       if (mounted) {
@@ -139,7 +211,7 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
       await ref.read(deleteEventProvider).call(widget.event.id);
 
       if (mounted) {
-        Navigator.pop(context, true);
+        context.pop(true);
       }
     } catch (error) {
       if (mounted) {
@@ -156,107 +228,213 @@ class _EditEventPageState extends ConsumerState<EditEventPage> {
     }
   }
 
+  // show dialogue pour demander la quantite de billets à generer
+
+  Future<void> _generateTickets() async {
+    final quantity = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Générer des billets'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Quantité'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final parsed = int.tryParse(controller.text);
+                Navigator.pop(dialogContext, parsed);
+              },
+              child: const Text('Générer'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (quantity == null) return; // annulé ou saisie invalide
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await ref.read(generateTicketsProvider).call(widget.event.id, quantity);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$quantity billets générés.')));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la génération : $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateLabel = MaterialLocalizations.of(
       context,
     ).formatMediumDate(_selectedDate);
+    final timeLabel = TimeOfDay.fromDateTime(_selectedDate).format(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Modifier l’événement'),
-        actions: [
-          IconButton(
-            onPressed: _isLoading ? null : _deleteEvent,
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Supprimer',
+    return SafeArea(
+      bottom: false,
+      child: Form(
+        key: _formKey,
+        child: ListView(
+          padding: AppTheme.pagePadding(
+            bottom: AppSpacing.bottomClearanceNoNav,
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Titre',
-                  border: OutlineInputBorder(),
+          children: [
+            PageHeader(
+              title: 'Modifier l’événement',
+              showBack: true,
+              trailing: PressableScale(
+                onTap: _isLoading ? null : _deleteEvent,
+                pressedScale: 0.9,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.glassSubtle,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: AppColors.errorBorder),
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: AppColors.errorText,
+                  ),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Le titre est obligatoire.';
-                  }
-                  return null;
-                },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'La description est obligatoire.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Lieu',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Le lieu est obligatoire.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _capacityController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Capacité',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  final capacity = int.tryParse(value ?? '');
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Titre'),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Le titre est obligatoire.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _descriptionController,
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: 'Description'),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'La description est obligatoire.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _eventPlaceController,
+              decoration: const InputDecoration(labelText: 'Lieu'),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Le lieu est obligatoire.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _maxPlacesController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Capacité max'),
+              validator: (value) {
+                final maxPlaces = int.tryParse(value ?? '');
 
-                  if (capacity == null || capacity <= 0) {
-                    return 'Entre une capacité supérieure à 0.';
-                  }
-                  return null;
-                },
+                if (maxPlaces == null || maxPlaces <= 0) {
+                  return 'Entre une capacité supérieure à 0.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _brandNameController,
+              decoration: const InputDecoration(labelText: 'Nom de marque'),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<EventType>(
+              initialValue: _eventType,
+              decoration: const InputDecoration(labelText: 'Type'),
+              items: EventType.values
+                  .map(
+                    (type) =>
+                        DropdownMenuItem(value: type, child: Text(type.label)),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _eventType = value);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              readOnly: true,
+              onTap: _isLoading ? null : _selectDate,
+              decoration: InputDecoration(
+                labelText: 'Date de l’événement',
+                suffixIcon: const Icon(Icons.calendar_today),
+                hintText: dateLabel,
               ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : _selectDate,
-                icon: const Icon(Icons.calendar_today),
-                label: Text('Date : $dateLabel'),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              readOnly: true,
+              onTap: _isLoading ? null : _selectTime,
+              decoration: InputDecoration(
+                labelText: 'Heure de début',
+                suffixIcon: const Icon(Icons.schedule),
+                hintText: timeLabel,
               ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isLoading ? null : _saveEvent,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Enregistrer les modifications'),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 24),
+            AppButton(
+              label: 'Enregistrer les modifications',
+              fullWidth: true,
+              onPressed: _isLoading ? null : _saveEvent,
+            ),
+            const SizedBox(height: 8),
+            //   bouton pour generer billets
+            AppButton(
+              label: 'Générer des billets',
+              fullWidth: true,
+              onPressed: _isLoading ? null : _generateTickets,
+            ),
+            const SizedBox(height: 8),
+            // UC6 — bouton pour consulter la liste des billets générés
+            AppButton(
+              label: 'Voir les billets',
+              variant: AppButtonVariant.secondary,
+              fullWidth: true,
+              onPressed: _isLoading
+                  ? null
+                  : () => context.push(
+                      '${AppRoutes.eventTickets}${widget.event.id}',
+                    ),
+            ),
+          ],
         ),
       ),
     );

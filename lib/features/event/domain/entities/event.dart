@@ -1,47 +1,66 @@
+import 'event_type.dart';
+import 'event_status.dart';
+
+/// Événement — spec `docs/classe.md`.
+///
+/// Champ `organizerId` supprimé : la relation de possession est portée par
+/// [EventUserRole] (role `Role.organiser`), comme dans le diagramme de classe.
 class Event {
   final String id;
-  final String organizerId;
   final String title;
   final String description;
-  final DateTime date;
-  final String location;
-  final int capacity;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime eventDate;
+  final DateTime startTime;
+  final String brandingUrl;
+  final int ticketsNumber;
+  final EventType type;
+  final String brandName;
+  final String eventPlace;
+  final int maxPlaces;
+  final EventStatus status;
 
   const Event({
     required this.id,
-    required this.organizerId,
     required this.title,
     required this.description,
-    required this.date,
-    required this.location,
-    required this.capacity,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.eventDate,
+    required this.startTime,
+    this.brandingUrl = '',
+    this.ticketsNumber = 0,
+    required this.type,
+    required this.brandName,
+    required this.eventPlace,
+    required this.maxPlaces,
+    required this.status,
   });
 
   Event copyWith({
     String? id,
-    String? organizerId,
     String? title,
     String? description,
-    DateTime? date,
-    String? location,
-    int? capacity,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime? eventDate,
+    DateTime? startTime,
+    String? brandingUrl,
+    int? ticketsNumber,
+    EventType? type,
+    String? brandName,
+    String? eventPlace,
+    int? maxPlaces,
+    EventStatus? status,
   }) {
     return Event(
       id: id ?? this.id,
-      organizerId: organizerId ?? this.organizerId,
       title: title ?? this.title,
       description: description ?? this.description,
-      date: date ?? this.date,
-      location: location ?? this.location,
-      capacity: capacity ?? this.capacity,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      eventDate: eventDate ?? this.eventDate,
+      startTime: startTime ?? this.startTime,
+      brandingUrl: brandingUrl ?? this.brandingUrl,
+      ticketsNumber: ticketsNumber ?? this.ticketsNumber,
+      type: type ?? this.type,
+      brandName: brandName ?? this.brandName,
+      eventPlace: eventPlace ?? this.eventPlace,
+      maxPlaces: maxPlaces ?? this.maxPlaces,
+      status: status ?? this.status,
     );
   }
 }
