@@ -6,9 +6,8 @@ import 'package:ticketpass/core/security/ticket_signature_service.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
-import 'package:ticketpass/core/theme/app_theme.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
-import 'package:ticketpass/core/widgets/page_header.dart';
 
 import '../../domain/entities/ticket.dart';
 import '../providers/ticket_providers.dart';
@@ -29,21 +28,21 @@ class TicketDetailPage extends ConsumerWidget {
       body: ticketAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(child: Text('Erreur : $error')),
-        data: (ticket) => SafeArea(
-          bottom: false,
-          child: SingleChildScrollView(
-            padding: AppTheme.pagePadding(
-              bottom: AppSpacing.bottomClearanceNoNav,
+        data: (ticket) => Column(
+          children: [
+            const AppTopBar(title: 'Mon billet', showBack: true),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  0,
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.bottomClearanceNoNav,
+                ),
+                children: [_BilletCard(ticket: ticket)],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const PageHeader(title: 'Mon billet', showBack: true),
-                const SizedBox(height: AppSpacing.lg),
-                _BilletCard(ticket: ticket),
-              ],
-            ),
-          ),
+          ],
         ),
       ),
     );

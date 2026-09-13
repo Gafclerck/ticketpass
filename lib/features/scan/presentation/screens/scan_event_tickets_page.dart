@@ -6,10 +6,9 @@ import 'package:ticketpass/core/security/ticket_signature_service.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
-import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
-import 'package:ticketpass/core/widgets/page_header.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/features/auth/domain/entities/role.dart';
 import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
@@ -129,7 +128,8 @@ class _ScanEventTicketsPageState extends ConsumerState<ScanEventTicketsPage> {
     }
   }
 
-  Future<void> _checkManual() => _processPayload(_payloadController.text.trim());
+  Future<void> _checkManual() =>
+      _processPayload(_payloadController.text.trim());
 
   Future<void> _validate(Ticket ticket) async {
     setState(() => _isValidating = true);
@@ -171,89 +171,91 @@ class _ScanEventTicketsPageState extends ConsumerState<ScanEventTicketsPage> {
       backgroundColor: Colors.transparent,
       body: !canScan
           ? _AccessDenied(eventTitle: eventAsync.value?.title)
-          : SafeArea(
-              bottom: false,
-              child: ListView(
-                padding: AppTheme.pagePadding(
-                  bottom: AppSpacing.bottomClearanceNoNav,
+          : Column(
+              children: [
+                AppTopBar(
+                  title: 'Scanner',
+                  subtitle: eventAsync.value?.title,
+                  showBack: true,
                 ),
-                children: [
-                  PageHeader(
-                    title: 'Scanner',
-                    subtitle: eventAsync.value?.title,
-                    showBack: true,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const Text(
-                    'Scannez le QR code présenté par le porteur pour vérifier '
-                    'puis valider son billet.',
-                    style: TextStyle(
-                      height: 1.4,
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.pageHorizontal,
+                      0,
+                      AppSpacing.pageHorizontal,
+                      AppSpacing.bottomClearanceNoNav,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  if (_useCamera && !_manualMode) ...[
-                    _CameraView(
-                      controller: _scannerController,
-                      onDetect: _onDetect,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _ModeToggle(
-                      label: 'Saisie manuelle',
-                      icon: Icons.keyboard_outlined,
-                      onTap: () => _setMode(manual: true),
-                    ),
-                  ] else ...[
-                    TextField(
-                      controller: _payloadController,
-                      maxLines: 2,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 13,
+                    children: [
+                      const Text(
+                        'Scannez le QR code présenté par le porteur pour '
+                        'vérifier puis valider son billet.',
+                        style: TextStyle(
+                          height: 1.4,
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Contenu du QR',
-                        hintText: 'ticketId|eventId|signature',
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    AppButton(
-                      label: 'Vérifier',
-                      fullWidth: true,
-                      icon: Icons.qr_code_scanner,
-                      onPressed: _isChecking || _isValidating
-                          ? null
-                          : _checkManual,
-                    ),
-                    if (_useCamera) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      _ModeToggle(
-                        label: 'Activer la caméra',
-                        icon: Icons.qr_code_scanner,
-                        onTap: () => _setMode(manual: false),
-                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      if (_useCamera && !_manualMode) ...[
+                        _CameraView(
+                          controller: _scannerController,
+                          onDetect: _onDetect,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _ModeToggle(
+                          label: 'Saisie manuelle',
+                          icon: Icons.keyboard_outlined,
+                          onTap: () => _setMode(manual: true),
+                        ),
+                      ] else ...[
+                        TextField(
+                          controller: _payloadController,
+                          maxLines: 2,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 13,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Contenu du QR',
+                            hintText: 'ticketId|eventId|signature',
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        AppButton(
+                          label: 'Vérifier',
+                          fullWidth: true,
+                          icon: Icons.qr_code_scanner,
+                          onPressed: _isChecking || _isValidating
+                              ? null
+                              : _checkManual,
+                        ),
+                        if (_useCamera) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          _ModeToggle(
+                            label: 'Activer la caméra',
+                            icon: Icons.qr_code_scanner,
+                            onTap: () => _setMode(manual: false),
+                          ),
+                        ],
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      if (_errorMessage != null)
+                        _MessageCard(message: _errorMessage!, isError: true),
+                      if (_checkedTicket != null) ...[
+                        if (_errorMessage != null)
+                          const SizedBox(height: AppSpacing.sm),
+                        _CheckedTicketCard(
+                          ticket: _checkedTicket!,
+                          eventId: widget.eventId,
+                          isValidating: _isValidating,
+                          onValidate: () => _validate(_checkedTicket!),
+                        ),
+                      ],
                     ],
-                  ],
-                  const SizedBox(height: AppSpacing.lg),
-                  if (_errorMessage != null)
-                    _MessageCard(
-                      message: _errorMessage!,
-                      isError: true,
-                    ),
-                  if (_checkedTicket != null) ...[
-                    if (_errorMessage != null)
-                      const SizedBox(height: AppSpacing.sm),
-                    _CheckedTicketCard(
-                      ticket: _checkedTicket!,
-                      eventId: widget.eventId,
-                      isValidating: _isValidating,
-                      onValidate: () => _validate(_checkedTicket!),
-                    ),
-                  ],
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
     );
   }
@@ -271,10 +273,7 @@ class _CameraView extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.box),
       child: SizedBox(
         height: 360,
-        child: MobileScanner(
-          controller: controller,
-          onDetect: onDetect,
-        ),
+        child: MobileScanner(controller: controller, onDetect: onDetect),
       ),
     );
   }
@@ -439,28 +438,31 @@ class _AccessDenied extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: AppTheme.pagePadding(bottom: AppSpacing.bottomClearanceNoNav),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            PageHeader(
-              title: 'Scanner',
-              subtitle: eventTitle,
-              showBack: true,
+    return Column(
+      children: [
+        AppTopBar(title: 'Scanner', subtitle: eventTitle, showBack: true),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
+              0,
+              AppSpacing.pageHorizontal,
+              AppSpacing.bottomClearanceNoNav,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            const _MessageCard(
-              message:
-                  'Accès réservé aux organisateurs et contrôleurs de '
-                  'l’événement.',
-              isError: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _MessageCard(
+                  message:
+                      'Accès réservé aux organisateurs et contrôleurs de '
+                      'l’événement.',
+                  isError: true,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

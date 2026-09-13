@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
-import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/core/widgets/app_search_field.dart';
-import 'package:ticketpass/core/widgets/page_header.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 
 import '../../../event/presentation/providers/event_providers.dart';
 import '../../domain/entities/ticket.dart';
@@ -87,86 +86,97 @@ class _EventTicketsBodyState extends State<_EventTicketsBody> {
         .where((t) => t.status == TicketStatus.used)
         .length;
 
-    return SafeArea(
-      bottom: false,
-      child: ListView(
-        padding: AppTheme.pagePadding(bottom: AppSpacing.bottomClearanceNoNav),
-        children: [
-          PageHeader(title: 'Billets', subtitle: widget.eventTitle, showBack: true),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
+    return Column(
+      children: [
+        AppTopBar(
+          title: 'Billets',
+          subtitle: widget.eventTitle,
+          showBack: true,
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
+              0,
+              AppSpacing.pageHorizontal,
+              AppSpacing.bottomClearanceNoNav,
+            ),
             children: [
-              Expanded(
-                child: _StatTile(
-                  value: total,
-                  label: 'Total',
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatTile(
+                      value: total,
+                      label: 'Total',
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _StatTile(
+                      value: validCount,
+                      label: 'Valides',
+                      color: AppColors.successText,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _StatTile(
+                      value: usedCount,
+                      label: 'Utilisés',
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: _StatTile(
-                  value: validCount,
-                  label: 'Valides',
-                  color: AppColors.successText,
-                ),
+              const SizedBox(height: AppSpacing.lg),
+              AppSearchField(
+                controller: _searchController,
+                hintText: 'Rechercher un billet...',
+                onChanged: (value) => setState(() => _query = value),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: _StatTile(
-                  value: usedCount,
-                  label: 'Utilisés',
-                  color: AppColors.textSecondary,
-                ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  _FilterChip(
+                    label: 'Tous',
+                    selected: _filter == _TicketFilter.all,
+                    onTap: () => setState(() => _filter = _TicketFilter.all),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  _FilterChip(
+                    label: 'Valides',
+                    selected: _filter == _TicketFilter.valid,
+                    onTap: () => setState(() => _filter = _TicketFilter.valid),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  _FilterChip(
+                    label: 'Utilisés',
+                    selected: _filter == _TicketFilter.used,
+                    onTap: () => setState(() => _filter = _TicketFilter.used),
+                  ),
+                ],
               ),
+              const SizedBox(height: AppSpacing.lg),
+              if (_filteredTickets.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                  child: Center(
+                    child: Text(
+                      'Aucun billet ne correspond.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  ),
+                )
+              else
+                for (final ticket in _filteredTickets) ...[
+                  _TicketRow(ticket: ticket),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          AppSearchField(
-            controller: _searchController,
-            hintText: 'Rechercher un billet...',
-            onChanged: (value) => setState(() => _query = value),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              _FilterChip(
-                label: 'Tous',
-                selected: _filter == _TicketFilter.all,
-                onTap: () => setState(() => _filter = _TicketFilter.all),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              _FilterChip(
-                label: 'Valides',
-                selected: _filter == _TicketFilter.valid,
-                onTap: () => setState(() => _filter = _TicketFilter.valid),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              _FilterChip(
-                label: 'Utilisés',
-                selected: _filter == _TicketFilter.used,
-                onTap: () => setState(() => _filter = _TicketFilter.used),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (_filteredTickets.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-              child: Center(
-                child: Text(
-                  'Aucun billet ne correspond.',
-                  style: TextStyle(color: AppColors.textMuted),
-                ),
-              ),
-            )
-          else
-            for (final ticket in _filteredTickets) ...[
-              _TicketRow(ticket: ticket),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -202,7 +212,10 @@ class _StatTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xxs),
-          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
         ],
       ),
     );

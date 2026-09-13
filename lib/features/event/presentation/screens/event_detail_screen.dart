@@ -10,6 +10,7 @@ import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/theme/app_typography.dart';
 import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/back_button_circle.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
@@ -64,9 +65,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     } catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) setState(() => _isBuying = false);
     }
@@ -90,9 +91,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Future<void> _openParticipants() async {
-    await context.push(
-      '${AppRoutes.eventParticipants}${widget.eventId}',
-    );
+    await context.push('${AppRoutes.eventParticipants}${widget.eventId}');
     ref.invalidate(eventRolesProvider(widget.eventId));
   }
 
@@ -133,17 +132,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (quantity == null) return;
 
     try {
-      await ref
-          .read(generateTicketsProvider)
-          .call(widget.eventId, quantity);
+      await ref.read(generateTicketsProvider).call(widget.eventId, quantity);
 
       if (!mounted) return;
 
       ref.invalidate(eventTicketsProvider(widget.eventId));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$quantity billets générés.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$quantity billets générés.')));
     } catch (error) {
       if (!mounted) return;
 
@@ -178,8 +175,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         data: (event) {
           final roles = rolesAsync.value ?? const <EventUserRole>[];
           final isOrganizer = roles.any(
-            (role) =>
-                role.userId == userId && role.role == Role.organiser,
+            (role) => role.userId == userId && role.role == Role.organiser,
           );
           final isController = roles.any(
             (role) => role.userId == userId && role.role == Role.controller,
@@ -205,10 +201,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   ),
                   children: [
                     // Hero (spec : mx 16, mt 16, height 320, radius 32)
-                    _Hero(
-                      event: event,
-                      participantCount: sold,
-                    ),
+                    _Hero(event: event, participantCount: sold),
                     // Contenu (spec : px 20, pt 20, gap 20)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(
@@ -227,9 +220,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           const SizedBox(height: AppSpacing.lg),
                           _MetadataGrid(event: event),
                           const SizedBox(height: AppSpacing.lg),
-                          _DescriptionSection(
-                            description: event.description,
-                          ),
+                          _DescriptionSection(description: event.description),
                           const SizedBox(height: AppSpacing.lg),
                           if (isOrganizer) ...[
                             _CapacityBlock(
@@ -257,14 +248,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
               ),
 
-              // FloatingHeader absolu au-dessus du hero (spec §8)
+              // FloatingHeader absolu au-dessus du hero (spec §8), posé sous
+              // une bande opaque : les icônes système restent sur fond plein,
+              // le contenu (hero) ne passe jamais derrière elles.
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                child: SafeArea(
-                  bottom: false,
-                  child: _FloatingHeader(title: event.title),
+                child: Column(
+                  children: [
+                    const AppSafeTopBand(),
+                    _FloatingHeader(title: event.title),
+                  ],
                 ),
               ),
 
@@ -405,11 +400,7 @@ class _ShareButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: AppColors.glassBorder),
         ),
-        child: const Icon(
-          Icons.ios_share,
-          color: Colors.white,
-          size: 20,
-        ),
+        child: const Icon(Icons.ios_share, color: Colors.white, size: 20),
       ),
     );
   }
@@ -526,17 +517,12 @@ class _HeroAvatarRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.fromBorderSide(BorderSide(width: 2)),
               ),
-              child: UserAvatar(
-                name: avatars[i],
-                size: 28,
-              ),
+              child: UserAvatar(name: avatars[i], size: 28),
             ),
           ),
         const SizedBox(width: AppSpacing.sm),
         Text(
-          participantCount > 0
-              ? '+$participantCount participants'
-              : 'En ligne',
+          participantCount > 0 ? '+$participantCount participants' : 'En ligne',
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -831,10 +817,7 @@ class _ControllerNotice extends StatelessWidget {
             child: Text(
               'Vous êtes contrôleur de cet événement : utilisez le bouton '
               'Scanner pour valider les billets.',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -870,9 +853,7 @@ class _BottomCtaBar extends StatelessWidget {
             ),
             decoration: const BoxDecoration(
               color: AppColors.overlayStrong,
-              border: Border(
-                top: BorderSide(color: Color(0x0FFFFFFF)),
-              ),
+              border: Border(top: BorderSide(color: Color(0x0FFFFFFF))),
             ),
             child: child,
           ),
@@ -1046,10 +1027,7 @@ class _ErrorState extends StatelessWidget {
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: 'Retour',
-            onPressed: onBack,
-          ),
+          AppButton(label: 'Retour', onPressed: onBack),
         ],
       ),
     );

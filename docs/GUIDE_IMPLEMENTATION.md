@@ -96,6 +96,7 @@ core/         tokens DS · widgets DS · routage · app shell
 | **Pages plein-écran = GoRoute racine + AppShell** | `Navigator.push` depuis une branche atterrit sur le navigateur de la branche → la nav flottante reste au-dessus et masque le contenu. Toutes les pages plein-écran (`/ticket/:id`, `/event/create`, `/event/edit?id=`) sont des routes racine |
 | Clearance unifiée `bottomClearanceWithNav` (112) | le dernier item d'un onglet doit rester au-dessus de la nav (92) + marge (20) |
 | Nav bar dans un `SafeArea` | inset des appareils à encoche (home indicator) pas pris en compte avec un `Positioned(bottom:16)` |
+| **Top bar fixe + bande safe-area opaque** | les icônes système (heure/batterie/réseau) doivent rester sur fond plein `#080808`, jamais sur du contenu (image/texte/halo). Deux widgets : `AppTopBar` (barre fixe hors scroll pour les sous-écrans plein-écran) et `AppSafeTopBand` (bande opaque, headers éditoriaux scrollables des onglets conservés). `SystemUiOverlayStyle.dark` appliqué au niveau racine (`main.dart`) : icônes claires sur fond sombre. Le `FloatingHeader` du détail événement est posé sous une `AppSafeTopBand`. |
 | Identité unifiée (`currentUserProvider`) | éviter deux sources de vérité (l'ancien provider core `currentUserIdProvider` a été supprimé) |
 | `getEventById` ajouté au repo | l'édition charge par id (deep-linkable, cache par `eventProvider`) et prépare l'EventDetail à venir |
 | QR réel (`qr_flutter`) | coût marginal vs QR décoratif, utile au scan futur par l'agent |
@@ -110,6 +111,7 @@ core/         tokens DS · widgets DS · routage · app shell
 - **`app_bottom_navigation_bar.dart`** : inchangé structurellement (`maListeIcon` = 4 onglets).
 - **`status_badge.dart`** : déplacé de `features/ticket/.../widgets` vers `core/widgets` (générique) ; wrapper `TicketStatusBadge` côté ticket ; imports des écrans mis à jour.
 - **`home_page.dart` / `profile_page.dart`** : placeholders → vrais écrans spec §8 (segment Buy/Sell/Create, recherche + chips, `_Header` avatar → profil ; UserCard stats dérivées des providers, menu, logout factice).
+- **Top bar fixe & safe area (`app_top_bar.dart`)** : les sous-écrans plein-écran (`ticket_detail`, `event_tickets`, `event_participants`, `create/edit_event`, `scan`) = `Column[AppTopBar, Expanded(scroll)]` — la barre (retour/titre/action) est HORS scroll, fond `#080808` derrière la zone d'encoche. Les 4 onglets gardent leur header éditorial scrollable sous `AppSafeTopBand`. L'`EventDetailScreen` pose son `FloatingHeader` sous une `AppSafeTopBand`. L'ancien Σ `SafeArea + PageHeader en tête de ListView` est abandonné. `SystemUiOverlayStyle.dark` (icônes claires) posé au niveau racine dans `main.dart` et sur `appBarTheme`.
 - **`my_tickets_page.dart` / `events_page.dart`** : FAB supprimés → `EmptyState` + tuiles CTA (`_CreateTile`) + `TicketCard`/`EventCard` ; padding `bottomClearanceWithNav`. L'import de billet (UC7) est retiré : un billet ne s'obtient que par la distribution automatique (UC19) depuis le détail d'un événement.
 - **`create_event_page.dart` / `edit_event_page.dart`** : AppBar → `PageHeader` custom, pickers date/heure → champs verre `readOnly`, boutons → `AppButton` ; `EditEventPage` charge par `eventId` (route racine).
 - **`ticket_detail_page.dart`** : AppBar → `PageHeader` (`Mon billet`), `Card` → `GlassCard` elevated, QR sur fond blanc.
@@ -144,6 +146,7 @@ core/         tokens DS · widgets DS · routage · app shell
 7. Écran :
    - Utiliser les tokens (`AppSpacing`, `AppRadius`, `AppColors`) et les widgets DS (jamais de `Card`/`AppBar`/`FilledButton` bruts).
    - Choix du routage : plein-écran → route racine (`app_router.dart` + constante dans `app_routes.dart`) + `AppShell` ; sinon branche.
+   - Top bar : sous-écran plein-écran → `Column[AppTopBar(...), Expanded(scroll)]` (barre fixe, retour/titre/action). Onglet → `AppSafeTopBand` en haut + header éditorial scrollable. La zone de la barre de statut reste toujours opaque (`#080808`), jamais de contenu scroller sous les icônes système.
    - Pagination des onglets : `AppTheme.pagePadding(bottom: AppSpacing.bottomClearanceWithNav)`.
 
 **Validation**
@@ -155,5 +158,5 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 7. Validation courante
 
 - `flutter analyze` → `No issues found!`
-- `flutter test` → tous les tests verts (UC1-11 + boot app, 37 tests).
+- `flutter test` → tous les tests verts (UC1-11 + boot app, `app_top_bar_test`, 42 tests).
 - Lint/sorties Windows : warnings CRLF/LF bénins.

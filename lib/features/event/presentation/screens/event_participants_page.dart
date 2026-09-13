@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
-import 'package:ticketpass/core/theme/app_theme.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
-import 'package:ticketpass/core/widgets/page_header.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/features/auth/domain/entities/role.dart';
 import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
@@ -31,28 +30,28 @@ class EventParticipantsPage extends ConsumerWidget {
     String participantId,
   ) async {
     try {
-      await ref.read(assignRoleProvider).call(
-        EventUserRole(
-          userId: participantId,
-          eventId: eventId,
-          role: Role.controller,
-        ),
-      );
+      await ref
+          .read(assignRoleProvider)
+          .call(
+            EventUserRole(
+              userId: participantId,
+              eventId: eventId,
+              role: Role.controller,
+            ),
+          );
       ref.invalidate(eventRolesProvider(eventId));
 
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$participantId est désormais contrôleur.'),
-        ),
+        SnackBar(content: Text('$participantId est désormais contrôleur.')),
       );
     } catch (error) {
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $error')));
     }
   }
 
@@ -76,112 +75,119 @@ class EventParticipantsPage extends ConsumerWidget {
     if (!canManage) {
       return Scaffold(
         backgroundColor: Colors.transparent,
-        body: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: AppTheme.pagePadding(
-              bottom: AppSpacing.bottomClearanceNoNav,
+        body: Column(
+          children: [
+            AppTopBar(
+              title: 'Participants',
+              subtitle: eventAsync.value?.title,
+              showBack: true,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PageHeader(
-                  title: 'Participants',
-                  subtitle: eventAsync.value?.title,
-                  showBack: true,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  0,
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.bottomClearanceNoNav,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                const GlassCard(
-                  mode: GlassCardMode.defaultMode,
-                  padding: EdgeInsets.all(AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.lock_outline,
-                        size: 20,
-                        color: AppColors.errorText,
-                      ),
-                      SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Text(
-                          'Accès réservé aux organisateurs et contrôleurs.',
-                          style: TextStyle(
-                            fontSize: 14,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const GlassCard(
+                      mode: GlassCardMode.defaultMode,
+                      padding: EdgeInsets.all(AppSpacing.md),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.lock_outline,
+                            size: 20,
                             color: AppColors.errorText,
                           ),
-                        ),
+                          SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Text(
+                              'Accès réservé aux organisateurs et contrôleurs.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.errorText,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: participantsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('Erreur : $error')),
-          data: (participantIds) {
-            final controllerIds =
-                roles.where((role) => role.role == Role.controller).map(
-                  (role) => role.userId,
-                );
+      body: Column(
+        children: [
+          AppTopBar(
+            title: 'Participants',
+            subtitle: eventAsync.value?.title,
+            showBack: true,
+          ),
+          Expanded(
+            child: participantsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) =>
+                  Center(child: Text('Erreur : $error')),
+              data: (participantIds) {
+                final controllerIds = roles
+                    .where((role) => role.role == Role.controller)
+                    .map((role) => role.userId);
 
-            return ListView(
-              padding: AppTheme.pagePadding(
-                bottom: AppSpacing.bottomClearanceNoNav,
-              ),
-              children: [
-                PageHeader(
-                  title: 'Participants',
-                  subtitle: eventAsync.value?.title,
-                  showBack: true,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  '${participantIds.length} '
-                  '${participantIds.length > 1 ? 'participants' : 'participant'}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textMuted,
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.pageHorizontal,
+                    0,
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.bottomClearanceNoNav,
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                if (participantIds.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                    child: Center(
-                      child: Text(
-                        'Aucun participant pour l’instant.',
-                        style: TextStyle(color: AppColors.textMuted),
+                  children: [
+                    Text(
+                      '${participantIds.length} '
+                      '${participantIds.length > 1 ? 'participants' : 'participant'}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textMuted,
                       ),
                     ),
-                  )
-                else
-                  for (final participantId in participantIds) ...[
-                    _ParticipantRow(
-                      participantId: participantId,
-                      isController: controllerIds.contains(participantId),
-                      canDesignate: isOrganizer,
-                      onDesignate: () => _designate(
-                        context,
-                        ref,
-                        participantId,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
+                    const SizedBox(height: AppSpacing.md),
+                    if (participantIds.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                        child: Center(
+                          child: Text(
+                            'Aucun participant pour l’instant.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        ),
+                      )
+                    else
+                      for (final participantId in participantIds) ...[
+                        _ParticipantRow(
+                          participantId: participantId,
+                          isController: controllerIds.contains(participantId),
+                          canDesignate: isOrganizer,
+                          onDesignate: () =>
+                              _designate(context, ref, participantId),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
                   ],
-              ],
-            );
-          },
-        ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -249,7 +255,11 @@ class _ParticipantRow extends StatelessWidget {
             ),
           ),
           if (isController)
-            const Icon(Icons.verified_outlined, size: 20, color: AppColors.primary)
+            const Icon(
+              Icons.verified_outlined,
+              size: 20,
+              color: AppColors.primary,
+            )
           else if (canDesignate)
             PressableScale(
               onTap: onDesignate,

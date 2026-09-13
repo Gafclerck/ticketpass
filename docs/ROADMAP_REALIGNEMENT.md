@@ -65,10 +65,23 @@
 - **Critères d'acceptation** : `flutter analyze` = 0 issue ; `flutter test` = tous verts.
 - **Validation** : avant commit.
 
+## Phase 4 — Barre de navigation en haut (SafeArea + top bar fixe)
+
+- **Contexte** : depuis l'edge-to-edge Android 15 (imposé), l'app dessine derrière la barre de statut : la UI (images, textos, halo) peut chevaucher les icônes système (heure/batterie/réseau).
+- **Périmètre** :
+  - `SystemUiOverlayStyle.dark` (icônes claires) au niveau racine (`main.dart`) + `appBarTheme` durci (`surfaceTintColor` transparent, `scrolledUnderElevation` 0).
+  - Nouveau `core/widgets/app_top_bar.dart` : `AppTopBar` (barre FIGE, fond `#080808` derrière la zone safe-area + `PageHeader` retour/titre/action) et `AppSafeTopBand` (bande opaque pour les onglets).
+  - Sous-écrans plein-écran refactorisés en `Column[AppTopBar, Expanded(scroll)]` : `ticket_detail`, `event_tickets`, `event_participants`, `create/edit_event`, `scan` (+ `_AccessDenied`).
+  - Onglets (Home/Événements/Mes billets/Profil) : `AppSafeTopBand` en haut, headers éditoriaux scrollables conservés.
+  - `EventDetailScreen` : bande supérieure pleine + `FloatingHeader` ancré dessous (le hero ne passe plus sous les icônes).
+  - Tests widget `app_top_bar_test` (barre figée au scroll, bande opaque).
+- **Critères d'acceptation** : `flutter analyze` = 0 issue ; `flutter test` = tous verts.
+- **Validation** : avant commit.
+
 ## Backlog (hors périmètre de cette tâche)
 
-- **Phase 4 — Offline & SyncQueue (UC12-13, UC22-23)** : table `SyncQueue` (drift), outbox, drain via `connectivity_plus`, conflits.
-- **Phase 5 — Infra & qualité** : auth Firebase multi-utilisateurs, seeds réalistes par user, chiffrement du secret de signature hors code source.
+- **Phase 5 — Offline & SyncQueue (UC12-13, UC22-23)** : table `SyncQueue` (drift), outbox, drain via `connectivity_plus`, conflits.
+- **Phase 6 — Infra & qualité** : auth Firebase multi-utilisateurs, seeds réalistes par user, chiffrement du secret de signature hors code source.
 
 ---
 
@@ -80,3 +93,4 @@
 | 1 — Fondations (UC19 + rôles) | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 29/29 verts |
 | 2 — EventDetailScreen | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 31/31 verts |
 | 3 — Gestion & contrôle | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 40/40 verts |
+| 4 — Top bar + safe area | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 42/42 verts |

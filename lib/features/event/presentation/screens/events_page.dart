@@ -8,6 +8,7 @@ import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/empty_state.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
 import 'package:ticketpass/core/widgets/page_header.dart';
@@ -50,53 +51,61 @@ class EventsPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: eventsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('Erreur : $error')),
-          data: (events) {
-            return ListView(
-              padding: AppTheme.pagePadding(
-                bottom: AppSpacing.bottomClearanceWithNav,
-              ),
-              children: [
-                PageHeader(
-                  title: 'Mes événements',
-                  subtitle: '${events.length} '
-                      '${events.length > 1 ? 'événements' : 'événement'}',
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (events.isEmpty)
-                  EmptyState(
-                    icon: Icons.add_circle_outline,
-                    title: 'Aucun événement',
-                    subtitle: 'Organisez votre premier événement et vendez '
-                        'vos billets en quelques étapes.',
-                    action: AppButton(
-                      label: 'Créer un événement',
-                      fullWidth: true,
-                      icon: Icons.add,
-                      onPressed: () => _openCreate(context, ref),
-                    ),
-                  )
-                else ...[
-                  _CreateTile(onTap: () => _openCreate(context, ref)),
-                  const SizedBox(height: AppSpacing.md),
-                  ...events.map(
-                    (event) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: EventCard(
-                        event: event,
-                        onTap: () => _openDetail(context, ref, event),
-                      ),
-                    ),
+      body: Column(
+        children: [
+          // bande opaque : le contenu scrolle sous, jamais sur les icônes
+          const AppSafeTopBand(),
+          Expanded(
+            child: eventsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) =>
+                  Center(child: Text('Erreur : $error')),
+              data: (events) {
+                return ListView(
+                  padding: AppTheme.pagePadding(
+                    bottom: AppSpacing.bottomClearanceWithNav,
                   ),
-                ],
-              ],
-            );
-          },
-        ),
+                  children: [
+                    PageHeader(
+                      title: 'Mes événements',
+                      subtitle:
+                          '${events.length} '
+                          '${events.length > 1 ? 'événements' : 'événement'}',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    if (events.isEmpty)
+                      EmptyState(
+                        icon: Icons.add_circle_outline,
+                        title: 'Aucun événement',
+                        subtitle:
+                            'Organisez votre premier événement et '
+                            'vendez vos billets en quelques étapes.',
+                        action: AppButton(
+                          label: 'Créer un événement',
+                          fullWidth: true,
+                          icon: Icons.add,
+                          onPressed: () => _openCreate(context, ref),
+                        ),
+                      )
+                    else ...[
+                      _CreateTile(onTap: () => _openCreate(context, ref)),
+                      const SizedBox(height: AppSpacing.md),
+                      ...events.map(
+                        (event) => Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                          child: EventCard(
+                            event: event,
+                            onTap: () => _openDetail(context, ref, event),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
