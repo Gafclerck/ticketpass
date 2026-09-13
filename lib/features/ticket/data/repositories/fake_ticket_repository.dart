@@ -10,6 +10,8 @@ import '../../domain/repositories/ticket_repository.dart';
 /// **Fake réaliste et non un stub** : il applique les règles métier de
 /// `docs/classe.md` (attribution uniquement depuis `unused`, refus des codes
 /// inconnus/déjà utilisés) et simule une latence réseau contrôlable.
+/// L'import de billet (UC7) a été retiré : seuls `generateTickets` (UC4) et
+/// `acquireTicket` (UC19) créent/attribuent des billets.
 class FakeTicketRepository implements TicketRepository {
   final List<Ticket> _tickets;
 
@@ -27,19 +29,6 @@ class FakeTicketRepository implements TicketRepository {
     Duration latency = const Duration(milliseconds: 200),
   }) {
     final tickets = <Ticket>[
-      // Billets importables (status: unused, aucun propriétaire).
-      _make(
-        id: 'ticket-0001',
-        status: TicketStatus.unused,
-        userId: '',
-        eventId: 'demo-event-id',
-      ),
-      _make(
-        id: 'ticket-0002',
-        status: TicketStatus.unused,
-        userId: '',
-        eventId: 'demo-event-id',
-      ),
       // Billets déjà possédés par l'utilisateur de démo.
       _make(
         id: 'ticket-0003',
@@ -101,36 +90,6 @@ class FakeTicketRepository implements TicketRepository {
     if (latency > Duration.zero) {
       await Future<void>.delayed(latency);
     }
-  }
-
-  @override
-  Future<Ticket> importTicket(
-    String uniqueCode, {
-    required String userId,
-  }) async {
-    await _simulateLatency();
-
-    final index = _tickets.indexWhere((t) => t.uniqueCode == uniqueCode);
-
-    if (index == -1) {
-      throw Exception('Code de billet introuvable.');
-    }
-
-    final ticket = _tickets[index];
-
-    if (ticket.status != TicketStatus.unused) {
-      throw Exception(
-        'Ce billet ne peut pas être importé (statut : ${ticket.status.label}).',
-      );
-    }
-
-    final imported = ticket.copyWith(
-      userId: userId,
-      status: TicketStatus.valid,
-    );
-    _tickets[index] = imported;
-
-    return imported;
   }
 
   @override

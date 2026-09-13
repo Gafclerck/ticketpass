@@ -9,17 +9,12 @@ import '../../domain/repositories/ticket_repository.dart';
 import '../../domain/usecases/get_my_tickets.dart';
 import '../../domain/usecases/get_ticket.dart';
 import '../../domain/usecases/get_tickets_for_event.dart';
-import '../../domain/usecases/import_ticket.dart';
 import '../../domain/usecases/validate_ticket.dart';
 
 /// Point de bascule : demain, [TicketRepository] sera une implémentation
 /// drift/Firestore. Seul CE provider changera.
 final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
   return FakeTicketRepository.demo();
-});
-
-final importTicketProvider = Provider<ImportTicket>((ref) {
-  return ImportTicket(ref.watch(ticketRepositoryProvider));
 });
 
 final getTicketProvider = Provider<GetTicket>((ref) {

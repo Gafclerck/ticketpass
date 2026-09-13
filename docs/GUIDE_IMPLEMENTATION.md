@@ -38,7 +38,6 @@ core/         tokens DS · widgets DS · routage · app shell
 | `createEvent/updateEvent/deleteEventProvider` | Provider\<UseCase> | mutations |
 | `myTicketsProvider(userId)` | FutureProvider.family | billets de l'user |
 | `ticketProvider(ticketId)` | FutureProvider.family | détail billet |
-| `importTicketProvider` | Provider\<UseCase> | UC7 import (code → billet VALID) |
 | `generateTicketsProvider` | Provider\<GenerateTickets> | UC4 générer N billets pour un événement |
 | `getTicketsForEventProvider` / `eventTicketsProvider(eventId)` | Provider / FutureProvider.family | UC6 liste des billets générés d'un événement (vue organisateur) |
 | `acquireTicketProvider` | Provider\<AcquireTicket> | UC19 distribution automatique d'un billet (achat) |
@@ -111,9 +110,10 @@ core/         tokens DS · widgets DS · routage · app shell
 - **`app_bottom_navigation_bar.dart`** : inchangé structurellement (`maListeIcon` = 4 onglets).
 - **`status_badge.dart`** : déplacé de `features/ticket/.../widgets` vers `core/widgets` (générique) ; wrapper `TicketStatusBadge` côté ticket ; imports des écrans mis à jour.
 - **`home_page.dart` / `profile_page.dart`** : placeholders → vrais écrans spec §8 (segment Buy/Sell/Create, recherche + chips, `_Header` avatar → profil ; UserCard stats dérivées des providers, menu, logout factice).
-- **`my_tickets_page.dart` / `events_page.dart`** : FAB supprimés → `EmptyState` + tuiles CTA (`_ImportTile`, `_CreateTile`) + `TicketCard`/`EventCard` ; padding `bottomClearanceWithNav`.
+- **`my_tickets_page.dart` / `events_page.dart`** : FAB supprimés → `EmptyState` + tuiles CTA (`_CreateTile`) + `TicketCard`/`EventCard` ; padding `bottomClearanceWithNav`. L'import de billet (UC7) est retiré : un billet ne s'obtient que par la distribution automatique (UC19) depuis le détail d'un événement.
 - **`create_event_page.dart` / `edit_event_page.dart`** : AppBar → `PageHeader` custom, pickers date/heure → champs verre `readOnly`, boutons → `AppButton` ; `EditEventPage` charge par `eventId` (route racine).
 - **`ticket_detail_page.dart`** : AppBar → `PageHeader` (`Mon billet`), `Card` → `GlassCard` elevated, QR sur fond blanc.
+- **`event_detail_screen.dart`** : redesigné selon la spec §8 — `FloatingHeader` (retour/titre/partage) flottant sur le hero 320px (radius 32), `OrganizerRow` (avatar 48 + nom + lieu + cœur), métadonnées Date/Horaire (chips 56px), section « À propos », bloc **Jauge** (organisateur seul), et CTA par rôle : barre basse fixe (visiteur « Obtenir un billet » → UC19 puis redirection `/ticket/:id`, porteur « Voir mon billet ») ou pile flottante droite (organisateur : Générer primaire 52px + Voir les billets + Participants + Modifier + Scanner ; contrôleur : Scanner).
 - **`MockEventRepository`** : catalogue public + `demo()` (seed 3 événements) + `getEventById`.
 - **`widget_test.dart`** : l'assertion "Home" → "TicketPass" (nouveau header).
 
@@ -135,7 +135,7 @@ core/         tokens DS · widgets DS · routage · app shell
 2. Ajouter la méthode au contrat `EventRepository` / `TicketRepository`.
 
 **Data (`data/`)**
-3. Implémenter la méthode dans le fake (`MockEventRepository`, `FakeTicketRepository`) avec latence simulée + règles métier (ex : un billet `used` ne se réimporte pas).
+3. Implémenter la méthode dans le fake (`MockEventRepository`, `FakeTicketRepository`) avec latence simulée + règles métier (ex : un billet `used` ne se revalide pas).
 4. `data/models/` : mapping si le format fake ≠ entité.
 
 **Présentation (`presentation/`)**
@@ -155,5 +155,5 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 7. Validation courante
 
 - `flutter analyze` → `No issues found!`
-- `flutter test` → tous les tests verts (UC1-11 + boot app, > 40 tests).
+- `flutter test` → tous les tests verts (UC1-11 + boot app, 37 tests).
 - Lint/sorties Windows : warnings CRLF/LF bénins.

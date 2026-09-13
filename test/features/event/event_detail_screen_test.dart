@@ -46,8 +46,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('EventDetailScreen — un visiteur peut prendre un billet (UC19)',
-      (tester) async {
+  testWidgets(
+      'EventDetailScreen — un visiteur obtient un billet (UC19) puis voit '
+      '« Voir mon billet »', (tester) async {
     router.go('/event/event-demo-1');
     await pumpDetail(
       tester,
@@ -55,17 +56,22 @@ void main() {
       ticketRepository: FakeTicketRepository.demo(latency: Duration.zero),
     );
 
+    // design spec : header flottant, hero, chips, « À propos »
     expect(find.text('Kendrick Lamar — The Big Steppers'), findsWidgets);
-    expect(find.text('Prendre un billet'), findsOneWidget);
+    expect(find.text('Obtenir un billet'), findsOneWidget);
+    expect(find.text('À propos'), findsOneWidget);
 
-    await tester.tap(find.text('Prendre un billet'));
+    await tester.tap(find.text('Obtenir un billet'));
+    await tester.pumpAndSettle();
+
+    // redirection vers le billet obtenu (ROADMAP)
+    expect(find.text('Mon billet'), findsOneWidget);
+
+    // retour sur le détail : l'utilisateur est désormais porteur
+    router.go('/event/event-demo-1');
     await tester.pumpAndSettle();
 
     expect(find.text('Voir mon billet'), findsOneWidget);
-
-    // laisser le SnackBar s'auto-masquer pour ne pas laisser de timer.
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pumpAndSettle();
   });
 
   testWidgets('EventDetailScreen — l’organisateur voit les actions de gestion',
@@ -83,10 +89,13 @@ void main() {
       ticketRepository: FakeTicketRepository.demo(latency: Duration.zero),
     );
 
-    expect(find.text('Modifier l’événement'), findsOneWidget);
+    // pile flottante droite (spéc §8 organisateur) + bloc jauge
+    expect(find.text('Générer'), findsOneWidget);
     expect(find.text('Voir les billets'), findsOneWidget);
-
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pumpAndSettle();
+    expect(find.text('Participants'), findsOneWidget);
+    expect(find.text('Modifier'), findsOneWidget);
+    expect(find.text('Scanner'), findsOneWidget);
+    expect(find.text('À propos'), findsOneWidget);
+    expect(find.text('Jauge'), findsOneWidget);
   });
 }

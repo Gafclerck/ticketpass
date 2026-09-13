@@ -8,12 +8,12 @@ void main() {
       final repository = FakeTicketRepository.demo(latency: Duration.zero);
       final usecase = GetTicketsForEvent(repository);
 
-      // Le jeu de démo contient 6 billets, tous sur 'demo-event-id'.
+      // Le jeu de démo contient 4 billets, tous sur 'demo-event-id'.
       await repository.generateTickets('autre-event-id', 2);
 
       final tickets = await usecase.call('demo-event-id');
 
-      expect(tickets.length, 6);
+      expect(tickets.length, 4);
       expect(tickets.every((t) => t.eventId == 'demo-event-id'), isTrue);
     });
 
