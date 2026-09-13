@@ -910,43 +910,82 @@ class _FloatingActions extends StatelessWidget {
       children: [
         for (var i = 0; i < actions.length; i++) ...[
           if (i > 0) const SizedBox(height: AppSpacing.sm),
-          _buildAction(actions[i]),
+          _FloatingActionItem(action: actions[i]),
         ],
       ],
     );
   }
+}
 
-  Widget _buildAction(_FloatingAction action) {
-    return PressableScale(
-      onTap: action.onTap,
-      pressedScale: 0.9,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.overlayDark,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: AppColors.glassBorder),
-            ),
-            child: Text(
-              action.label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: action.primary
-                    ? AppColors.primary
-                    : AppColors.textPrimary,
+/// Item flottant — la pilule de libellé n'apparaît qu'au survol (hover),
+/// jamais fixée (spéc §5.6 : opacity 0 par défaut, révélée au hover 200 ms).
+class _FloatingActionItem extends StatefulWidget {
+  final _FloatingAction action;
+
+  const _FloatingActionItem({required this.action});
+
+  @override
+  State<_FloatingActionItem> createState() => _FloatingActionItemState();
+}
+
+class _FloatingActionItemState extends State<_FloatingActionItem> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final action = widget.action;
+    final size = action.primary ? 52.0 : 44.0;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: SizedBox(
+        height: size,
+        child: Stack(
+          alignment: Alignment.centerRight,
+          clipBehavior: Clip.none,
+          children: [
+            // Pilule à gauche du cercle, masquée par défaut (hover uniquement)
+            Positioned(
+              right: size + AppSpacing.xs,
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _hovered ? 1 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: _labelPill(action),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          _actionCircle(action),
-        ],
+            PressableScale(
+              onTap: action.onTap,
+              pressedScale: 0.9,
+              child: _actionCircle(action),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _labelPill(_FloatingAction action) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.overlayDark,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Text(
+        action.label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: action.primary ? AppColors.primary : AppColors.textPrimary,
+        ),
       ),
     );
   }

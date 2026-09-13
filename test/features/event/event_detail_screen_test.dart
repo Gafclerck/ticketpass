@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -97,5 +98,48 @@ void main() {
     expect(find.text('Scanner'), findsOneWidget);
     expect(find.text('À propos'), findsOneWidget);
     expect(find.text('Jauge'), findsOneWidget);
+  });
+
+  testWidgets(
+      'EventDetailScreen — l’organisateur : les libellés d’actions sont '
+      'masqués et ne se révèlent qu’au survol', (tester) async {
+    final repository = MockEventRepository();
+    final created = await repository.createEvent(
+      _event('org-event-2'),
+      userId: 'demo-user-id',
+    );
+
+    router.go('/event/${created.id}');
+    await pumpDetail(
+      tester,
+      eventRepository: repository,
+      ticketRepository: FakeTicketRepository.demo(latency: Duration.zero),
+    );
+
+    AnimatedOpacity pillOf(String label) {
+      final animated = find.ancestor(
+        of: find.text(label),
+        matching: find.byType(AnimatedOpacity),
+      );
+      return tester.widget<AnimatedOpacity>(animated.first);
+    }
+
+    // masquées par défaut (spéc §5.6 : opacity 0, jamais fixes)
+    expect(pillOf('Modifier').opacity, 0);
+
+    // survol du cercle Scanner → la pilule apparaît (200 ms)
+    final gesture = await tester.createGesture(
+      kind: PointerDeviceKind.mouse,
+    );
+    addTearDown(gesture.removePointer);
+    await gesture.addPointer(location: Offset.zero);
+    await tester.pump();
+
+    final scannerIcon = find.byIcon(Icons.qr_code_scanner);
+    final center = tester.getCenter(scannerIcon);
+    await gesture.moveTo(center);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(pillOf('Scanner').opacity, 1);
   });
 }
