@@ -2,6 +2,7 @@
 
 Document de référence pour comprendre ce qui est implémenté et contribuer.
 Source de vérité produit : `docs/FLUTTER_PROTOTYPE_SPEC.md` (UI) et `docs/classe.md` (domaine).
+Plan de réalignement courant : `docs/ROADMAP_REALIGNEMENT.md`.
 Règles complémentaires : `AGENTS.md`.
 
 ---
@@ -21,6 +22,7 @@ core/         tokens DS · widgets DS · routage · app shell
 - **Dépendances** : presentation → domain (jamais l'inverse) ; data → domain seulement.
 - **Entités** : classes manuelles conformes à `docs/classe.md` (`copyWith` écrit à la main, pas de freezed).
 - **Fakes** : `MockEventRepository`, `FakeTicketRepository` simulent la latence et les règles métier. Les contrats datasources (`ticket_local_datasource`…) existent mais ne sont pas branchés : **le provider Riverpod est l'unique point de bascule fake → réel**.
+- **Sécurité QR (UC5)** : `core/security/ticket_signature_service.dart` signe `(ticketId, eventId)` en HMAC-SHA256 (clé dev en source, à externaliser en prod) et expose `buildQrPayload`/`verifyQrPayload` pour le scan hors-ligne. Dépendance `crypto`.
 - **Identité** : `features/auth/presentation/providers/current_user_provider.dart` expose l'utilisateur démo (`User`). C'est la **source unique** ; l'ancien `core/providers/current_user_provider.dart` a été supprimé.
 
 ### Providers existants (résumé)
@@ -36,6 +38,8 @@ core/         tokens DS · widgets DS · routage · app shell
 | `myTicketsProvider(userId)` | FutureProvider.family | billets de l'user |
 | `ticketProvider(ticketId)` | FutureProvider.family | détail billet |
 | `importTicketProvider` | Provider\<UseCase> | UC7 import (code → billet VALID) |
+| `generateTicketsProvider` | Provider\<GenerateTickets> | UC4 générer N billets pour un événement |
+| `getTicketsForEventProvider` / `eventTicketsProvider(eventId)` | Provider / FutureProvider.family | UC6 liste des billets générés d'un événement (vue organisateur) |
 
 ---
 
@@ -145,5 +149,5 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 7. Validation courante
 
 - `flutter analyze` → `No issues found!`
-- `flutter test` → 8 tests verts (7 UC billets sur fake + 1 boot app).
+- `flutter test` → tous les tests verts (UC1-6 et UC7-9 sur fakes + boot app).
 - Lint/sorties Windows : warnings CRLF/LF bénins.
