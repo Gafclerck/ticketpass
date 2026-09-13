@@ -6,6 +6,7 @@ import 'package:ticketpass/core/widgets/app_shell.dart';
 import 'package:ticketpass/features/event/presentation/pages/create_event_page.dart';
 import 'package:ticketpass/features/event/presentation/pages/edit_event_page.dart';
 import 'package:ticketpass/features/home/presentation/screens/home_page.dart';
+import 'package:ticketpass/features/event/presentation/screens/event_detail_screen.dart';
 import 'package:ticketpass/features/event/presentation/screens/events_page.dart';
 import 'package:ticketpass/features/ticket/presentation/screens/event_tickets_page.dart';
 import 'package:ticketpass/features/ticket/presentation/screens/my_tickets_page.dart';
@@ -46,6 +47,14 @@ final GoRouter router = GoRouter(
         }
         return AppShell(child: EditEventPage(eventId: eventId));
       },
+    ),
+    GoRoute(
+      path: '${AppRoutes.eventDetail}:id',
+      builder: (context, state) => AppShell(
+        child: EventDetailScreen(
+          eventId: state.pathParameters['id']!,
+        ),
+      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

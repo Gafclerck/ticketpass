@@ -77,5 +77,5 @@
 |---|---|---|
 | 0 — Documentation | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 19/19 verts |
 | 1 — Fondations (UC19 + rôles) | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 29/29 verts |
-| 2 — EventDetailScreen | À faire | — |
+| 2 — EventDetailScreen | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 31/31 verts |
 | 3 — Gestion & contrôle | À faire | — |

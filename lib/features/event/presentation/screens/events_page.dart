@@ -32,19 +32,15 @@ class EventsPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _openEdit(
+  Future<void> _openDetail(
     BuildContext context,
     WidgetRef ref,
     Event event,
   ) async {
-    final isUpdated = await context.push<bool>(
-      '${AppRoutes.eventEdit}?id=${event.id}',
-    );
+    await context.push('${AppRoutes.eventDetail}${event.id}');
 
-    if (isUpdated == true) {
-      ref.invalidate(myEventsProvider(ref.read(currentUserProvider).id));
-      ref.invalidate(discoverEventsProvider);
-    }
+    ref.invalidate(myEventsProvider(ref.read(currentUserProvider).id));
+    ref.invalidate(discoverEventsProvider);
   }
 
   @override
@@ -92,7 +88,7 @@ class EventsPage extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: EventCard(
                         event: event,
-                        onTap: () => _openEdit(context, ref, event),
+                        onTap: () => _openDetail(context, ref, event),
                       ),
                     ),
                   ),

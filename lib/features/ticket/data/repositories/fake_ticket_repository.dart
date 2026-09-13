@@ -65,6 +65,16 @@ class FakeTicketRepository implements TicketRepository {
         userId: demoUserId,
         eventId: 'demo-event-id',
       ),
+      // Billets disponibles du catalogue de démonstration (event-demo-1),
+      // pour que l'achat (UC19) fonctionne depuis la Home découverte.
+      ...List.generate(20, (i) {
+        return _make(
+          id: 'ticket-demo-1-${i + 1}',
+          status: TicketStatus.unused,
+          userId: '',
+          eventId: 'event-demo-1',
+        );
+      }),
     ];
     return FakeTicketRepository(seed: tickets, latency: latency);
   }

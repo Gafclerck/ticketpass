@@ -11,6 +11,9 @@ abstract class AppRoutes {
   // UC6 — liste des billets d'un événement (vue organisateur)
   static const String eventTickets = '/event/tickets/';
 
+  // Détail d'un événement (route plein-écran, hors nav)
+  static const String eventDetail = '/event/';
+
   // Pages plein-écran (hors nav) — routes racine + AppShell obligatoires
   static const String eventCreate = '/event/create';
   static const String eventEdit = '/event/edit';

@@ -120,7 +120,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ...filtered.map(
                     (event) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: EventCard(event: event),
+                      child: EventCard(
+                        event: event,
+                        onTap: () => context.push(
+                          '${AppRoutes.eventDetail}${event.id}',
+                        ),
+                      ),
                     ),
                   ),
               ],
