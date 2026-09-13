@@ -23,6 +23,7 @@ core/         tokens DS · widgets DS · routage · app shell
 - **Entités** : classes manuelles conformes à `docs/classe.md` (`copyWith` écrit à la main, pas de freezed).
 - **Fakes** : `MockEventRepository`, `FakeTicketRepository` simulent la latence et les règles métier. Les contrats datasources (`ticket_local_datasource`…) existent mais ne sont pas branchés : **le provider Riverpod est l'unique point de bascule fake → réel**.
 - **Sécurité QR (UC5)** : `core/security/ticket_signature_service.dart` signe `(ticketId, eventId)` en HMAC-SHA256 (clé dev en source, à externaliser en prod) et expose `buildQrPayload`/`verifyQrPayload` pour le scan hors-ligne. Dépendance `crypto`.
+- **Scanner (UC10-11)** : `features/scan`, caméra `mobile_scanner` (permission `CAMERA` ajoutée sur Android + `NSCameraUsageDescription` sur iOS), repli « Saisie manuelle » ; accès réservé organisateur/contrôleur ; transition `VALID → USED` via `validateTicket`. `scanUseCameraProvider` (override `false` en test).
 - **Identité** : `features/auth/presentation/providers/current_user_provider.dart` expose l'utilisateur démo (`User`). C'est la **source unique** ; l'ancien `core/providers/current_user_provider.dart` a été supprimé.
 
 ### Providers existants (résumé)
@@ -40,6 +41,11 @@ core/         tokens DS · widgets DS · routage · app shell
 | `importTicketProvider` | Provider\<UseCase> | UC7 import (code → billet VALID) |
 | `generateTicketsProvider` | Provider\<GenerateTickets> | UC4 générer N billets pour un événement |
 | `getTicketsForEventProvider` / `eventTicketsProvider(eventId)` | Provider / FutureProvider.family | UC6 liste des billets générés d'un événement (vue organisateur) |
+| `acquireTicketProvider` | Provider\<AcquireTicket> | UC19 distribution automatique d'un billet (achat) |
+| `eventParticipantsProvider(eventId)` | FutureProvider.family | détenteurs de billets d'un événement (page Participants) |
+| `eventRolesProvider(eventId)` / `assignRoleProvider` | FutureProvider.family / Provider | UC24 rôles + désignation d'un contrôleur |
+| `validateTicketProvider` | Provider\<ValidateTicket> | UC11 transition `VALID → USED` (scanner) |
+| `scanUseCameraProvider` | Provider\<bool> | caméra du scanner (`true` en app ; `false` dans les tests widget) |
 
 ---
 
@@ -101,7 +107,7 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 4. Déplacements / mofidications notables du code existant
 
 - **`app_theme.dart` réécrit** + tokens créés (`app_spacing/radius/typography`), `app_colors` étendu (états, glass, success/error). Ancien `app_text_styles.dart` : **non utilisé**, à supprimer.
-- **`app_router.dart`** : branché sur `AppShell` ; les 4 onglets dans `StatefulShellRoute.indexedStack` ; nav bar dans un `SafeArea` ; ajout des routes racine `/event/create` et `/event/edit`.
+- **`app_router.dart`** : branché sur `AppShell` ; les 4 onglets dans `StatefulShellRoute.indexedStack` ; nav bar dans un `SafeArea` ; ajout des routes racine `/event/:id` (EventDetail), `/event/participants/:id`, `/scan/:eventId`, `/event/create` et `/event/edit`.
 - **`app_bottom_navigation_bar.dart`** : inchangé structurellement (`maListeIcon` = 4 onglets).
 - **`status_badge.dart`** : déplacé de `features/ticket/.../widgets` vers `core/widgets` (générique) ; wrapper `TicketStatusBadge` côté ticket ; imports des écrans mis à jour.
 - **`home_page.dart` / `profile_page.dart`** : placeholders → vrais écrans spec §8 (segment Buy/Sell/Create, recherche + chips, `_Header` avatar → profil ; UserCard stats dérivées des providers, menu, logout factice).
@@ -149,5 +155,5 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 7. Validation courante
 
 - `flutter analyze` → `No issues found!`
-- `flutter test` → tous les tests verts (UC1-6 et UC7-9 sur fakes + boot app).
+- `flutter test` → tous les tests verts (UC1-11 + boot app, > 40 tests).
 - Lint/sorties Windows : warnings CRLF/LF bénins.

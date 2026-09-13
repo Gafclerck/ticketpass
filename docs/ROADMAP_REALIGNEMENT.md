@@ -60,7 +60,8 @@
 - **Périmètre** :
   - Page **Participants** (détenteurs de billets d'un événement).
   - Écran **générer des billets** (quantité → UC4) + invalidation des fourmisseurs.
-  - **Scanner / validation (UC10-11)** : `features/scan`, vérification du payload QR (`TicketSignatureService.verifyQrPayload`), transition `VALID → USED` (`validateTicket`), accès réservé aux organisateurs/contrôleurs.
+  - **Scanner / validation (UC10-11)** : `features/scan`, caméra `mobile_scanner` (repli « saisie manuelle » testable), vérification du payload QR (`TicketSignatureService.verifyQrPayload`), transition `VALID → USED` (`validateTicket`), accès réservé aux organisateurs/contrôleurs.
+  - **Génération de billets** : dialog factorisé sur le **détail** de l'événement (organisateur), retiré de la page d'édition.
 - **Critères d'acceptation** : `flutter analyze` = 0 issue ; `flutter test` = tous verts.
 - **Validation** : avant commit.
 
@@ -78,4 +79,4 @@
 | 0 — Documentation | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 19/19 verts |
 | 1 — Fondations (UC19 + rôles) | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 29/29 verts |
 | 2 — EventDetailScreen | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 31/31 verts |
-| 3 — Gestion & contrôle | À faire | — |
+| 3 — Gestion & contrôle | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 40/40 verts |

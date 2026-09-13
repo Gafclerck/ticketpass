@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'package:ticketpass/core/security/ticket_signature_service.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
@@ -76,7 +77,11 @@ class _BilletCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.box),
             ),
             child: QrImageView(
-              data: ticket.qrSignature,
+              // payload complet : ticketId|eventId|signature (UC5)
+              data: TicketSignatureService.buildQrPayload(
+                ticket.id,
+                ticket.eventId,
+              ),
               version: QrVersions.auto,
               size: 220,
             ),

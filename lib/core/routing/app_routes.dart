@@ -14,6 +14,12 @@ abstract class AppRoutes {
   // Détail d'un événement (route plein-écran, hors nav)
   static const String eventDetail = '/event/';
 
+  // Participants d'un événement (vue gestion)
+  static const String eventParticipants = '/event/participants/';
+
+  // Scanner / validation de billets (UC10-11)
+  static const String scan = '/scan/';
+
   // Pages plein-écran (hors nav) — routes racine + AppShell obligatoires
   static const String eventCreate = '/event/create';
   static const String eventEdit = '/event/edit';

@@ -230,4 +230,29 @@ class FakeTicketRepository implements TicketRepository {
         .toSet()
         .toList(growable: false);
   }
+
+  @override
+  Future<Ticket> validateTicket(String ticketId) async {
+    await _simulateLatency();
+
+    final index = _tickets.indexWhere((ticket) => ticket.id == ticketId);
+
+    if (index == -1) {
+      throw Exception('Billet introuvable.');
+    }
+
+    final ticket = _tickets[index];
+
+    if (ticket.status != TicketStatus.valid) {
+      throw Exception(
+        'Seul un billet valide peut être utilisé '
+        '(statut : ${ticket.status.label}).',
+      );
+    }
+
+    final used = ticket.copyWith(status: TicketStatus.used);
+    _tickets[index] = used;
+
+    return used;
+  }
 }

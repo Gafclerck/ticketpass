@@ -29,4 +29,9 @@ abstract class TicketRepository {
   // Participants d'un événement : ids des détenteurs de billets attribués.
 
   Future<List<String>> getParticipants(String eventId);
+
+  // UC11 - Valider un billet (transition VALID -> USED) par l'organisateur ou
+  // le contrôleur.
+
+  Future<Ticket> validateTicket(String ticketId);
 }

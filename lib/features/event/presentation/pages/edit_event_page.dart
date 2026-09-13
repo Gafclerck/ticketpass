@@ -8,7 +8,6 @@ import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/core/widgets/app_button.dart';
 import 'package:ticketpass/core/widgets/page_header.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
-import '../../../ticket/presentation/providers/ticket_providers.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_type.dart';
@@ -230,58 +229,6 @@ class _EditEventFormState extends ConsumerState<_EditEventForm> {
 
   // show dialogue pour demander la quantite de billets à generer
 
-  Future<void> _generateTickets() async {
-    final quantity = await showDialog<int>(
-      context: context,
-      builder: (dialogContext) {
-        final controller = TextEditingController();
-        return AlertDialog(
-          title: const Text('Générer des billets'),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Quantité'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Annuler'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final parsed = int.tryParse(controller.text);
-                Navigator.pop(dialogContext, parsed);
-              },
-              child: const Text('Générer'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (quantity == null) return; // annulé ou saisie invalide
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await ref.read(generateTicketsProvider).call(widget.event.id, quantity);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$quantity billets générés.')));
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la génération : $error')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final dateLabel = MaterialLocalizations.of(
@@ -414,13 +361,6 @@ class _EditEventFormState extends ConsumerState<_EditEventForm> {
               label: 'Enregistrer les modifications',
               fullWidth: true,
               onPressed: _isLoading ? null : _saveEvent,
-            ),
-            const SizedBox(height: 8),
-            //   bouton pour generer billets
-            AppButton(
-              label: 'Générer des billets',
-              fullWidth: true,
-              onPressed: _isLoading ? null : _generateTickets,
             ),
             const SizedBox(height: 8),
             // UC6 — bouton pour consulter la liste des billets générés

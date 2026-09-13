@@ -10,6 +10,7 @@ import '../../domain/usecases/get_my_tickets.dart';
 import '../../domain/usecases/get_ticket.dart';
 import '../../domain/usecases/get_tickets_for_event.dart';
 import '../../domain/usecases/import_ticket.dart';
+import '../../domain/usecases/validate_ticket.dart';
 
 /// Point de bascule : demain, [TicketRepository] sera une implémentation
 /// drift/Firestore. Seul CE provider changera.
@@ -76,4 +77,9 @@ final eventParticipantsProvider = FutureProvider.family<List<String>, String>((
   eventId,
 ) {
   return ref.watch(getParticipantsProvider).call(eventId);
+});
+
+/// UC11 — validation d'un billet (VALID → USED).
+final validateTicketProvider = Provider<ValidateTicket>((ref) {
+  return ValidateTicket(ref.watch(ticketRepositoryProvider));
 });

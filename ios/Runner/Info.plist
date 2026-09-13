@@ -12,6 +12,8 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>La caméra est utilisée pour scanner le QR code des billets et valider l'entrée (UC10).</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

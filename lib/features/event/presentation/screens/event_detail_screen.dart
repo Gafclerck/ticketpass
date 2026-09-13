@@ -88,6 +88,70 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     ref.invalidate(eventTicketsProvider(widget.eventId));
   }
 
+  Future<void> _openParticipants() async {
+    await context.push(
+      '${AppRoutes.eventParticipants}${widget.eventId}',
+    );
+    ref.invalidate(eventRolesProvider(widget.eventId));
+  }
+
+  Future<void> _openScanner() async {
+    await context.push('${AppRoutes.scan}${widget.eventId}');
+    ref.invalidate(eventTicketsProvider(widget.eventId));
+  }
+
+  Future<void> _generateTickets() async {
+    final quantity = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Générer des billets'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Quantité'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final parsed = int.tryParse(controller.text);
+                Navigator.pop(dialogContext, parsed);
+              },
+              child: const Text('Générer'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (quantity == null) return;
+
+    try {
+      await ref
+          .read(generateTicketsProvider)
+          .call(widget.eventId, quantity);
+
+      if (!mounted) return;
+
+      ref.invalidate(eventTicketsProvider(widget.eventId));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$quantity billets générés.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la génération : $error')),
+      );
+    }
+  }
+
   Ticket? _findOwnedTicket(List<Ticket> tickets) {
     for (final ticket in tickets) {
       if (ticket.eventId == widget.eventId) return ticket;
@@ -149,6 +213,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   _OrganizerActions(
                     onEdit: () => _openEdit(userId),
                     onTickets: _openTickets,
+                    onParticipants: _openParticipants,
+                    onGenerate: _generateTickets,
+                    onScan: _openScanner,
                   )
                 else if (owned != null)
                   _OwnedTicketActions(
@@ -156,7 +223,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ticketCode: owned.uniqueCode,
                   )
                 else if (isController)
-                  const _ControllerNotice()
+                  _ControllerNotice(onScan: _openScanner)
                 else
                   AppButton(
                     label: 'Prendre un billet',
@@ -362,8 +429,17 @@ class _InfoRow extends StatelessWidget {
 class _OrganizerActions extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onTickets;
+  final VoidCallback onParticipants;
+  final VoidCallback onGenerate;
+  final VoidCallback onScan;
 
-  const _OrganizerActions({required this.onEdit, required this.onTickets});
+  const _OrganizerActions({
+    required this.onEdit,
+    required this.onTickets,
+    required this.onParticipants,
+    required this.onGenerate,
+    required this.onScan,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -382,6 +458,30 @@ class _OrganizerActions extends StatelessWidget {
           fullWidth: true,
           icon: Icons.confirmation_number_outlined,
           onPressed: onTickets,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          label: 'Voir les participants',
+          variant: AppButtonVariant.secondary,
+          fullWidth: true,
+          icon: Icons.group_outlined,
+          onPressed: onParticipants,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          label: 'Générer des billets',
+          variant: AppButtonVariant.secondary,
+          fullWidth: true,
+          icon: Icons.add_circle_outline,
+          onPressed: onGenerate,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          label: 'Scanner',
+          variant: AppButtonVariant.secondary,
+          fullWidth: true,
+          icon: Icons.qr_code_scanner,
+          onPressed: onScan,
         ),
       ],
     );
@@ -422,25 +522,45 @@ class _OwnedTicketActions extends StatelessWidget {
 }
 
 class _ControllerNotice extends StatelessWidget {
-  const _ControllerNotice();
+  final VoidCallback onScan;
+
+  const _ControllerNotice({required this.onScan});
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      mode: GlassCardMode.defaultMode,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: const Row(
-        children: [
-          Icon(Icons.verified_user_outlined, size: 20, color: AppColors.primary),
-          SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              'Vous êtes contrôleur de cet événement.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
+    return Column(
+      children: [
+        GlassCard(
+          mode: GlassCardMode.defaultMode,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.verified_user_outlined,
+                size: 20,
+                color: AppColors.primary,
+              ),
+              SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  'Vous êtes contrôleur de cet événement.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          label: 'Scanner',
+          fullWidth: true,
+          icon: Icons.qr_code_scanner,
+          onPressed: onScan,
+        ),
+      ],
     );
   }
 }
