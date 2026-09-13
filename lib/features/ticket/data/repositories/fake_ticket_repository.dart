@@ -172,4 +172,52 @@ class FakeTicketRepository implements TicketRepository {
 
     return generated;
   }
+
+  @override
+  Future<Ticket> acquireTicket(
+    String eventId, {
+    required String userId,
+  }) async {
+    await _simulateLatency();
+
+    final alreadyOwned = _tickets.any(
+      (ticket) => ticket.eventId == eventId && ticket.userId == userId,
+    );
+
+    if (alreadyOwned) {
+      throw Exception('Vous possédez déjà un billet pour cet événement.');
+    }
+
+    final index = _tickets.indexWhere(
+      (ticket) =>
+          ticket.eventId == eventId &&
+          ticket.status == TicketStatus.unused &&
+          ticket.userId.isEmpty,
+    );
+
+    if (index == -1) {
+      throw Exception('Plus de billet disponible pour cet événement.');
+    }
+
+    final acquired = _tickets[index].copyWith(
+      userId: userId,
+      status: TicketStatus.valid,
+    );
+    _tickets[index] = acquired;
+
+    return acquired;
+  }
+
+  @override
+  Future<List<String>> getParticipants(String eventId) async {
+    await _simulateLatency();
+
+    return _tickets
+        .where(
+          (ticket) => ticket.eventId == eventId && ticket.userId.isNotEmpty,
+        )
+        .map((ticket) => ticket.userId)
+        .toSet()
+        .toList(growable: false);
+  }
 }

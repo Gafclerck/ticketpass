@@ -1,7 +1,9 @@
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_status.dart';
 import '../../domain/entities/event_type.dart';
+import '../../domain/entities/event_user_role.dart';
 import '../../domain/repositories/event_repository.dart';
+import '../../../auth/domain/entities/role.dart';
 
 /// Implémentation fake (en mémoire) du dépôt d'événements.
 ///
@@ -10,6 +12,7 @@ import '../../domain/repositories/event_repository.dart';
 /// présentation.
 class MockEventRepository implements EventRepository {
   final Map<String, List<Event>> _eventsByUserId = {};
+  final Map<String, List<EventUserRole>> _rolesByEventId = {};
   final List<Event> _catalogue = [];
 
   MockEventRepository();
@@ -79,6 +82,9 @@ class MockEventRepository implements EventRepository {
 
     (_eventsByUserId[userId] ??= <Event>[]).add(createdEvent);
     _catalogue.add(createdEvent);
+    (_rolesByEventId[createdEvent.id] ??= <EventUserRole>[]).add(
+      EventUserRole(userId: userId, eventId: createdEvent.id, role: Role.organiser),
+    );
     return createdEvent;
   }
 
@@ -110,6 +116,7 @@ class MockEventRepository implements EventRepository {
       events.removeWhere((event) => event.id == eventId);
     }
     _catalogue.removeWhere((event) => event.id == eventId);
+    _rolesByEventId.remove(eventId);
   }
 
   @override
@@ -135,5 +142,26 @@ class MockEventRepository implements EventRepository {
     }
 
     throw Exception('Événement introuvable.');
+  }
+
+  @override
+  Future<List<EventUserRole>> getRoles(String eventId) async {
+    return List.unmodifiable(_rolesByEventId[eventId] ?? const <EventUserRole>[]);
+  }
+
+  @override
+  Future<void> assignRole(EventUserRole role) async {
+    final roles = _rolesByEventId[role.eventId] ??= <EventUserRole>[];
+
+    final index = roles.indexWhere(
+      (item) =>
+          item.userId == role.userId &&
+          item.eventId == role.eventId &&
+          item.role == role.role,
+    );
+
+    if (index != -1) return;
+
+    roles.add(role);
   }
 }

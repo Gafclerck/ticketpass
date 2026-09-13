@@ -76,6 +76,6 @@
 | Phase | État | Validation |
 |---|---|---|
 | 0 — Documentation | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 19/19 verts |
-| 1 — Fondations (UC19 + rôles) | À faire | — |
+| 1 — Fondations (UC19 + rôles) | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 29/29 verts |
 | 2 — EventDetailScreen | À faire | — |
 | 3 — Gestion & contrôle | À faire | — |

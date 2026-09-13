@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ticketpass/features/ticket/domain/usecases/acquire_ticket.dart';
 import 'package:ticketpass/features/ticket/domain/usecases/generate_tickets.dart';
+import 'package:ticketpass/features/ticket/domain/usecases/get_participants.dart';
 
 import '../../data/repositories/fake_ticket_repository.dart';
 import '../../domain/entities/ticket.dart';
@@ -57,4 +59,21 @@ final eventTicketsProvider = FutureProvider.family<List<Ticket>, String>((
   eventId,
 ) {
   return ref.watch(getTicketsForEventProvider).call(eventId);
+});
+
+/// UC19 — distribution automatique d'un billet.
+final acquireTicketProvider = Provider<AcquireTicket>((ref) {
+  return AcquireTicket(ref.watch(ticketRepositoryProvider));
+});
+
+final getParticipantsProvider = Provider<GetParticipants>((ref) {
+  return GetParticipants(ref.watch(ticketRepositoryProvider));
+});
+
+/// Participants d'un événement (ids des détenteurs de billets).
+final eventParticipantsProvider = FutureProvider.family<List<String>, String>((
+  ref,
+  eventId,
+) {
+  return ref.watch(getParticipantsProvider).call(eventId);
 });
