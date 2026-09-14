@@ -76,7 +76,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       _SegmentedControl(
                         selectedIndex: _segmentIndex,
                         onChanged: (index) async {
-                          if (index == 2) {
+                          if (index == 1) {
                             // Create → écran de création d'événement (route plein-écran)
                             final isCreated = await context.push<bool>(
                               AppRoutes.eventCreate,
@@ -217,7 +217,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Segment Buy / Sell / Create — spec §8 (pill verre, onglet actif `#148cfa`).
+/// Segment Buy / Create — spec §8 (pill verre, onglet actif `#148cfa`).
 class _SegmentedControl extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
@@ -229,7 +229,7 @@ class _SegmentedControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Buy', 'Sell', 'Create'];
+    const labels = ['Buy', 'Create'];
 
     return GlassCard(
       mode: GlassCardMode.defaultMode,

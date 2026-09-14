@@ -354,7 +354,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 // FloatingHeader
 // ---------------------------------------------------------------------------
 
-/// En-tête du détail (bouton retour + titre + bouton partage), posé dans le
+/// En-tête du détail (bouton retour + titre), posé dans le
 /// flux en tête de page ; c'est `PinnedTopBar` qui gère l'épinglage au scroll
 /// et le fond plein masquant le contenu qui passe dessous.
 class _FloatingHeader extends StatelessWidget {
@@ -383,30 +383,7 @@ class _FloatingHeader extends StatelessWidget {
             ),
           ),
         ),
-        const _ShareButton(),
       ],
-    );
-  }
-}
-
-class _ShareButton extends StatelessWidget {
-  const _ShareButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return PressableScale(
-      pressedScale: 0.9,
-      onTap: () {},
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppColors.glassSurface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.glassBorder),
-        ),
-        child: const Icon(Icons.ios_share, color: Colors.white, size: 20),
-      ),
     );
   }
 }
@@ -508,33 +485,13 @@ class _HeroAvatarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const avatars = ['A', 'B', 'C'];
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < avatars.length; i++)
-          Transform.translate(
-            // chevauchement de 8px entre les cercles (spéc §8)
-            offset: Offset(i == 0 ? 0 : -10.0 * i, 0),
-            child: Container(
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.fromBorderSide(BorderSide(width: 2)),
-              ),
-              child: UserAvatar(name: avatars[i], size: 28),
-            ),
-          ),
-        const SizedBox(width: AppSpacing.sm),
-        Text(
-          participantCount > 0 ? '+$participantCount participants' : 'En ligne',
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ],
+    return Text(
+      participantCount > 0 ? '+$participantCount participants' : 'En ligne',
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
     );
   }
 }
