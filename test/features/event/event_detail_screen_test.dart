@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ticketpass/core/routing/app_router.dart';
+import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/features/event/data/repositories/mock_event_repository.dart';
 import 'package:ticketpass/features/event/domain/entities/event.dart';
 import 'package:ticketpass/features/event/domain/entities/event_status.dart';
@@ -141,5 +142,41 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(pillOf('Scanner').opacity, 1);
+  });
+
+  testWidgets(
+      'EventDetailScreen — le header flottant devient opaque au scroll',
+      (tester) async {
+    router.go('/event/event-demo-1');
+    await pumpDetail(
+      tester,
+      eventRepository: MockEventRepository.demo(),
+      ticketRepository: FakeTicketRepository.demo(latency: Duration.zero),
+    );
+
+    // hauteur réduite pour garantir un contenu scrollable
+    tester.view.physicalSize = const Size(800, 700);
+    tester.view.devicePixelRatio = 1.0;
+    await tester.pump();
+
+    Color? headerColor() {
+      final animated = find.ancestor(
+        of: find.text('Kendrick Lamar — The Big Steppers'),
+        matching: find.byType(AnimatedContainer),
+      );
+      final container = tester.widget<AnimatedContainer>(animated.first);
+      final decoration = container.decoration;
+      return decoration is BoxDecoration ? decoration.color : null;
+    }
+
+    // au repos : transparent, posé sur le hero
+    expect(headerColor(), Colors.transparent);
+
+    await tester.fling(find.byType(ListView), const Offset(0, -600), 1000);
+    await tester.pumpAndSettle();
+
+    // au scroll : header épinglé + fond plein qui masque le contenu
+    expect(find.text('Kendrick Lamar — The Big Steppers'), findsWidgets);
+    expect(headerColor(), AppColors.background);
   });
 }

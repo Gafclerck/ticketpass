@@ -46,6 +46,15 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Ticket? _acquiredTicket;
   bool _isBuying = false;
+  bool _headerScrolled = false;
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    final scrolled = notification.metrics.pixels > 0;
+    if (scrolled != _headerScrolled) {
+      setState(() => _headerScrolled = scrolled);
+    }
+    return false;
+  }
 
   Future<void> _acquire(String userId) async {
     setState(() => _isBuying = true);
@@ -194,57 +203,60 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             children: [
               SafeArea(
                 bottom: false,
-                child: ListView(
-                  padding: EdgeInsets.only(
-                    top: AppSpacing.xs,
-                    bottom: bottomClearance,
-                  ),
-                  children: [
-                    // Hero (spec : mx 16, mt 16, height 320, radius 32)
-                    _Hero(event: event, participantCount: sold),
-                    // Contenu (spec : px 20, pt 20, gap 20)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        0,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _OrganizerRow(
-                            brandName: event.brandName,
-                            place: event.eventPlace,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          _MetadataGrid(event: event),
-                          const SizedBox(height: AppSpacing.lg),
-                          _DescriptionSection(description: event.description),
-                          const SizedBox(height: AppSpacing.lg),
-                          if (isOrganizer) ...[
-                            _CapacityBlock(
-                              sold: sold,
-                              capacity: event.maxPlaces,
-                            ),
-                            const SizedBox(height: AppSpacing.lg),
-                          ],
-                          if (isController) ...[
-                            const _ControllerNotice(),
-                            const SizedBox(height: AppSpacing.lg),
-                          ],
-                          if (!rolesAsync.hasValue)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(AppSpacing.lg),
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                          const SizedBox(height: AppSpacing.sm),
-                        ],
-                      ),
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _handleScrollNotification,
+                  child: ListView(
+                    padding: EdgeInsets.only(
+                      top: AppSpacing.xs,
+                      bottom: bottomClearance,
                     ),
-                  ],
+                    children: [
+                      // Hero (spec : mx 16, mt 16, height 320, radius 32)
+                      _Hero(event: event, participantCount: sold),
+                      // Contenu (spec : px 20, pt 20, gap 20)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _OrganizerRow(
+                              brandName: event.brandName,
+                              place: event.eventPlace,
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            _MetadataGrid(event: event),
+                            const SizedBox(height: AppSpacing.lg),
+                            _DescriptionSection(description: event.description),
+                            const SizedBox(height: AppSpacing.lg),
+                            if (isOrganizer) ...[
+                              _CapacityBlock(
+                                sold: sold,
+                                capacity: event.maxPlaces,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
+                            if (isController) ...[
+                              const _ControllerNotice(),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
+                            if (!rolesAsync.hasValue)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(AppSpacing.lg),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                            const SizedBox(height: AppSpacing.sm),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -258,7 +270,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 child: Column(
                   children: [
                     const AppSafeTopBand(),
-                    _FloatingHeader(title: event.title),
+                    _FloatingHeader(
+                      title: event.title,
+                      scrolled: _headerScrolled,
+                    ),
                   ],
                 ),
               ),
@@ -346,14 +361,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 // ---------------------------------------------------------------------------
 
 /// Header flottant (spéc §8) : bouton retour + titre + bouton partage.
+///
+/// Transparent au repos (posé sur le hero) ; dès que le contenu scrolle,
+/// reçoit un fond plein `#080808` qui masque ce qui passe dessous.
 class _FloatingHeader extends StatelessWidget {
   final String title;
+  final bool scrolled;
 
-  const _FloatingHeader({required this.title});
+  const _FloatingHeader({required this.title, required this.scrolled});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      color: scrolled ? AppColors.background : Colors.transparent,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,

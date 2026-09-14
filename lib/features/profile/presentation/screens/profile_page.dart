@@ -10,6 +10,7 @@ import 'package:ticketpass/core/widgets/app_button.dart';
 import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
 import 'package:ticketpass/core/widgets/page_header.dart';
+import 'package:ticketpass/core/widgets/pinned_top_bar.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/core/widgets/user_avatar.dart';
 import 'package:ticketpass/features/auth/domain/entities/user.dart';
@@ -44,51 +45,53 @@ class ProfilePage extends ConsumerWidget {
           // bande opaque : le contenu scrolle sous, jamais sur les icônes
           const AppSafeTopBand(),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.pageHorizontal,
-                AppSpacing.pageTop,
-                AppSpacing.pageHorizontal,
-                AppSpacing.bottomClearanceWithNav,
+            child: PinnedTopBar(
+              header: PageHeader(
+                title: 'Profil',
+                showBack: true,
+                onBack: () => context.go(AppRoutes.home),
               ),
-              children: [
-                PageHeader(
-                  title: 'Profil',
-                  showBack: true,
-                  onBack: () => context.go(AppRoutes.home),
+              body: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  0,
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.bottomClearanceWithNav,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                _UserCard(user: user),
-                const SizedBox(height: AppSpacing.lg),
-                _StatsRow(
-                  eventsCount: eventsCount,
-                  ticketsCount: tickets.length,
-                  validatedCount: validatedCount,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _Menu(
-                  onMyEvents: () => context.go(AppRoutes.tickets),
-                  onStub: (label) => ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      SnackBar(content: Text('$label — bientôt disponible')),
-                    ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppButton(
-                  label: 'Se déconnecter',
-                  variant: AppButtonVariant.secondary,
-                  onPressed: () => ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Déconnexion — auth à venir (sprint infras)',
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  _UserCard(user: user),
+                  const SizedBox(height: AppSpacing.lg),
+                  _StatsRow(
+                    eventsCount: eventsCount,
+                    ticketsCount: tickets.length,
+                    validatedCount: validatedCount,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _Menu(
+                    onMyEvents: () => context.go(AppRoutes.tickets),
+                    onStub: (label) => ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(content: Text('$label — bientôt disponible')),
+                      ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppButton(
+                    label: 'Se déconnecter',
+                    variant: AppButtonVariant.secondary,
+                    onPressed: () => ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Déconnexion — auth à venir (sprint infras)',
+                          ),
                         ),
                       ),
-                    ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],

@@ -9,6 +9,7 @@ import 'package:ticketpass/core/widgets/app_search_field.dart';
 import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/empty_state.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
+import 'package:ticketpass/core/widgets/pinned_top_bar.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/core/widgets/user_avatar.dart';
 
@@ -59,82 +60,85 @@ class _HomePageState extends ConsumerState<HomePage> {
               data: (events) {
                 final filtered = _applyFilters(events);
 
-                return ListView(
-                  padding: const EdgeInsets.only(
-                    left: AppSpacing.lg,
-                    right: AppSpacing.lg,
-                    top: AppSpacing.pageTop,
-                    bottom: AppSpacing.bottomClearanceWithNav,
+                return PinnedTopBar(
+                  header: _Header(
+                    userName: currentUser.fullName,
+                    onAvatarTap: () => context.go(AppRoutes.profile),
                   ),
-                  children: [
-                    _Header(
-                      userName: currentUser.fullName,
-                      onAvatarTap: () => context.go(AppRoutes.profile),
+                  body: ListView(
+                    padding: const EdgeInsets.only(
+                      left: AppSpacing.pageHorizontal,
+                      right: AppSpacing.pageHorizontal,
+                      bottom: AppSpacing.bottomClearanceWithNav,
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _SegmentedControl(
-                      selectedIndex: _segmentIndex,
-                      onChanged: (index) async {
-                        if (index == 2) {
-                          // Create → écran de création d'événement (route plein-écran)
-                          final isCreated = await context.push<bool>(
-                            AppRoutes.eventCreate,
-                          );
-                          if (isCreated == true) {
-                            ref.invalidate(discoverEventsProvider);
+                    children: [
+                      const SizedBox(height: AppSpacing.lg),
+                      _SegmentedControl(
+                        selectedIndex: _segmentIndex,
+                        onChanged: (index) async {
+                          if (index == 2) {
+                            // Create → écran de création d'événement (route plein-écran)
+                            final isCreated = await context.push<bool>(
+                              AppRoutes.eventCreate,
+                            );
+                            if (isCreated == true) {
+                              ref.invalidate(discoverEventsProvider);
+                            }
+                            return;
                           }
-                          return;
-                        }
-                        setState(() => _segmentIndex = index);
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Text(
-                      'Bonjour 👋',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
+                          setState(() => _segmentIndex = index);
+                        },
                       ),
-                    ),
-                    Text(
-                      'Que diriez-vous d’un bon\névénement ?',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineLarge?.copyWith(fontSize: 32),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    AppSearchField(
-                      controller: _searchController,
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _CategoryChips(
-                      selected: _selectedCategory,
-                      onChanged: (category) =>
-                          setState(() => _selectedCategory = category),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    if (filtered.isEmpty)
-                      EmptyState(
-                        icon: Icons.search_off,
-                        title: 'Aucun événement trouvé',
-                        subtitle:
-                            'Essayez une autre recherche ou une autre '
-                            'catégorie.',
-                      )
-                    else
-                      ...filtered.map(
-                        (event) => Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                          child: EventCard(
-                            event: event,
-                            onTap: () => context.push(
-                              '${AppRoutes.eventDetail}${event.id}',
+                      const SizedBox(height: AppSpacing.xl),
+                      Text(
+                        'Bonjour 👋',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        'Que diriez-vous d’un bon\névénement ?',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineLarge?.copyWith(fontSize: 32),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppSearchField(
+                        controller: _searchController,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _CategoryChips(
+                        selected: _selectedCategory,
+                        onChanged: (category) =>
+                            setState(() => _selectedCategory = category),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      if (filtered.isEmpty)
+                        EmptyState(
+                          icon: Icons.search_off,
+                          title: 'Aucun événement trouvé',
+                          subtitle:
+                              'Essayez une autre recherche ou une autre '
+                              'catégorie.',
+                        )
+                      else
+                        ...filtered.map(
+                          (event) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.md,
+                            ),
+                            child: EventCard(
+                              event: event,
+                              onTap: () => context.push(
+                                '${AppRoutes.eventDetail}${event.id}',
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
