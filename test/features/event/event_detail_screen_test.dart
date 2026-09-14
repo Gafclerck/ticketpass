@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ticketpass/core/routing/app_router.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
+import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/features/event/data/repositories/mock_event_repository.dart';
 import 'package:ticketpass/features/event/domain/entities/event.dart';
 import 'package:ticketpass/features/event/domain/entities/event_status.dart';
@@ -145,7 +146,7 @@ void main() {
   });
 
   testWidgets(
-      'EventDetailScreen — le header flottant devient opaque au scroll',
+      'EventDetailScreen — le header de tête de page devient opaque au scroll',
       (tester) async {
     router.go('/event/event-demo-1');
     await pumpDetail(
@@ -169,7 +170,7 @@ void main() {
       return decoration is BoxDecoration ? decoration.color : null;
     }
 
-    // au repos : transparent, posé sur le hero
+    // au repos : en-tête dans le flux, transparent (rien dessous)
     expect(headerColor(), Colors.transparent);
 
     await tester.fling(find.byType(ListView), const Offset(0, -600), 1000);
@@ -178,5 +179,23 @@ void main() {
     // au scroll : header épinglé + fond plein qui masque le contenu
     expect(find.text('Kendrick Lamar — The Big Steppers'), findsWidgets);
     expect(headerColor(), AppColors.background);
+  });
+
+  testWidgets(
+      'EventDetailScreen — l’encoche du bas est incluse dans le dégagement',
+      (tester) async {
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+    router.go('/event/event-demo-1');
+    await pumpDetail(
+      tester,
+      eventRepository: MockEventRepository.demo(),
+      ticketRepository: FakeTicketRepository.demo(latency: Duration.zero),
+    );
+
+    final listView = tester.widget<ListView>(find.byType(ListView));
+    expect(
+      (listView.padding as EdgeInsets).bottom,
+      AppSpacing.bottomClearanceWithNav + 34,
+    );
   });
 }

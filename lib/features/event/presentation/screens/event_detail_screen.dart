@@ -13,6 +13,7 @@ import 'package:ticketpass/core/widgets/app_button.dart';
 import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/back_button_circle.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
+import 'package:ticketpass/core/widgets/pinned_top_bar.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/core/widgets/user_avatar.dart';
 import 'package:ticketpass/features/auth/domain/entities/role.dart';
@@ -26,9 +27,10 @@ import '../providers/event_providers.dart';
 
 /// Détail d'un événement — route racine (cache la barre de navigation).
 ///
-/// Conforme à la spec `FLUTTER_PROTOTYPE_SPEC.md` §8 : `FloatingHeader` sur le
-/// hero, hero 320px (radius 32), `MetadataGrid` (Date/Horaire), section
-/// « À propos », jauge de capacité (organisateur), et CTA selon le rôle :
+/// En-tête dans le flux au-dessus du hero (même comportement que les onglets :
+/// transparent au repos, épinglé + fond plein au scroll), hero 320px (radius
+/// 32), `MetadataGrid` (Date/Horaire), section « À propos », jauge de capacité
+/// (organisateur), et CTA selon le rôle :
 /// - visiteur → barre basse « Obtenir un billet » (UC19 puis `/ticket/:id`) ;
 /// - porteur  → barre basse « Voir mon billet » ;
 /// - organisateur → pile flottante droite (Générer primaire, puis Voir les
@@ -46,15 +48,6 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Ticket? _acquiredTicket;
   bool _isBuying = false;
-  bool _headerScrolled = false;
-
-  bool _handleScrollNotification(ScrollNotification notification) {
-    final scrolled = notification.metrics.pixels > 0;
-    if (scrolled != _headerScrolled) {
-      setState(() => _headerScrolled = scrolled);
-    }
-    return false;
-  }
 
   Future<void> _acquire(String userId) async {
     setState(() => _isBuying = true);
@@ -195,87 +188,88 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           final sold = participantsAsync.value?.length ?? 0;
 
           final hasBottomCta = !isOrganizer && !isController;
-          final bottomClearance = hasBottomCta
-              ? AppSpacing.bottomClearanceWithNav
-              : AppSpacing.bottomClearanceNoNav;
+          // Dégagement bas : clearance fixe + encoche du bas (home indicator),
+          // pour que le dernier contenu ne reste jamais caché sous la barre.
+          final bottomInset = MediaQuery.paddingOf(context).bottom;
+          final bottomClearance = (hasBottomCta
+                  ? AppSpacing.bottomClearanceWithNav
+                  : AppSpacing.bottomClearanceNoNav) +
+              bottomInset;
 
           return Stack(
             children: [
-              SafeArea(
-                bottom: false,
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: _handleScrollNotification,
-                  child: ListView(
-                    padding: EdgeInsets.only(
-                      top: AppSpacing.xs,
-                      bottom: bottomClearance,
-                    ),
-                    children: [
-                      // Hero (spec : mx 16, mt 16, height 320, radius 32)
-                      _Hero(event: event, participantCount: sold),
-                      // Contenu (spec : px 20, pt 20, gap 20)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg,
-                          AppSpacing.lg,
-                          AppSpacing.lg,
-                          0,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _OrganizerRow(
-                              brandName: event.brandName,
-                              place: event.eventPlace,
-                            ),
-                            const SizedBox(height: AppSpacing.lg),
-                            _MetadataGrid(event: event),
-                            const SizedBox(height: AppSpacing.lg),
-                            _DescriptionSection(description: event.description),
-                            const SizedBox(height: AppSpacing.lg),
-                            if (isOrganizer) ...[
-                              _CapacityBlock(
-                                sold: sold,
-                                capacity: event.maxPlaces,
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                            ],
-                            if (isController) ...[
-                              const _ControllerNotice(),
-                              const SizedBox(height: AppSpacing.lg),
-                            ],
-                            if (!rolesAsync.hasValue)
-                              const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(AppSpacing.lg),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            const SizedBox(height: AppSpacing.sm),
-                          ],
-                        ),
+              // En-tête dans le flux (PinnedTopBar) : au repos il est posé
+              // au-dessus du hero sans le recouvrir ; au scroll il reste collé
+              // sous la barre de statut avec un fond plein.
+              Column(
+                children: [
+                  const AppSafeTopBand(),
+                  Expanded(
+                    child: PinnedTopBar(
+                      headerPadding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.xs,
+                        AppSpacing.md,
+                        0,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // FloatingHeader absolu au-dessus du hero (spec §8), posé sous
-              // une bande opaque : les icônes système restent sur fond plein,
-              // le contenu (hero) ne passe jamais derrière elles.
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Column(
-                  children: [
-                    const AppSafeTopBand(),
-                    _FloatingHeader(
-                      title: event.title,
-                      scrolled: _headerScrolled,
+                      header: _FloatingHeader(title: event.title),
+                      body: ListView(
+                        padding: EdgeInsets.only(
+                          top: AppSpacing.xs,
+                          bottom: bottomClearance,
+                        ),
+                        children: [
+                          // Hero (spec : mx 16, mt 16, height 320, radius 32)
+                          _Hero(event: event, participantCount: sold),
+                          // Contenu (spec : px 20, pt 20, gap 20)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.lg,
+                              AppSpacing.lg,
+                              0,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _OrganizerRow(
+                                  brandName: event.brandName,
+                                  place: event.eventPlace,
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                _MetadataGrid(event: event),
+                                const SizedBox(height: AppSpacing.lg),
+                                _DescriptionSection(
+                                  description: event.description,
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                if (isOrganizer) ...[
+                                  _CapacityBlock(
+                                    sold: sold,
+                                    capacity: event.maxPlaces,
+                                  ),
+                                  const SizedBox(height: AppSpacing.lg),
+                                ],
+                                if (isController) ...[
+                                  const _ControllerNotice(),
+                                  const SizedBox(height: AppSpacing.lg),
+                                ],
+                                if (!rolesAsync.hasValue)
+                                  const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(AppSpacing.lg),
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                const SizedBox(height: AppSpacing.sm),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
 
               // CTA selon le rôle
@@ -360,48 +354,37 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 // FloatingHeader
 // ---------------------------------------------------------------------------
 
-/// Header flottant (spéc §8) : bouton retour + titre + bouton partage.
-///
-/// Transparent au repos (posé sur le hero) ; dès que le contenu scrolle,
-/// reçoit un fond plein `#080808` qui masque ce qui passe dessous.
+/// En-tête du détail (bouton retour + titre + bouton partage), posé dans le
+/// flux en tête de page ; c'est `PinnedTopBar` qui gère l'épinglage au scroll
+/// et le fond plein masquant le contenu qui passe dessous.
 class _FloatingHeader extends StatelessWidget {
   final String title;
-  final bool scrolled;
 
-  const _FloatingHeader({required this.title, required this.scrolled});
+  const _FloatingHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      color: scrolled ? AppColors.background : Colors.transparent,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          const BackButtonCircle(),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+    return Row(
+      children: [
+        const BackButtonCircle(),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
-          const _ShareButton(),
-        ],
-      ),
+        ),
+        const _ShareButton(),
+      ],
     );
   }
 }
