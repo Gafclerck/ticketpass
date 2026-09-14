@@ -6,8 +6,10 @@ import 'package:ticketpass/core/theme/app_radius.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/routing/app_routes.dart';
 import 'package:ticketpass/core/widgets/app_search_field.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/empty_state.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
+import 'package:ticketpass/core/widgets/pinned_top_bar.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/core/widgets/user_avatar.dart';
 
@@ -46,87 +48,102 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: eventsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('Erreur : $error')),
-          data: (events) {
-            final filtered = _applyFilters(events);
+      body: Column(
+        children: [
+          // bande opaque : le contenu scrolle sous, jamais sur les icônes
+          const AppSafeTopBand(),
+          Expanded(
+            child: eventsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) =>
+                  Center(child: Text('Erreur : $error')),
+              data: (events) {
+                final filtered = _applyFilters(events);
 
-            return ListView(
-              padding: const EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.pageTop,
-                bottom: AppSpacing.bottomClearanceWithNav,
-              ),
-              children: [
-                _Header(
-                  userName: currentUser.fullName,
-                  onAvatarTap: () => context.go(AppRoutes.profile),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _SegmentedControl(
-                  selectedIndex: _segmentIndex,
-                  onChanged: (index) async {
-                    if (index == 2) {
-                      // Create → écran de création d'événement (route plein-écran)
-                      final isCreated = await context.push<bool>(
-                        AppRoutes.eventCreate,
-                      );
-                      if (isCreated == true) {
-                        ref.invalidate(discoverEventsProvider);
-                      }
-                      return;
-                    }
-                    setState(() => _segmentIndex = index);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'Bonjour 👋',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                ),
-                Text(
-                  'Que diriez-vous d’un bon\névénement ?',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontSize: 32,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppSearchField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _CategoryChips(
-                  selected: _selectedCategory,
-                  onChanged: (category) =>
-                      setState(() => _selectedCategory = category),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (filtered.isEmpty)
-                  EmptyState(
-                    icon: Icons.search_off,
-                    title: 'Aucun événement trouvé',
-                    subtitle: 'Essayez une autre recherche ou une autre '
-                        'catégorie.',
-                  )
-                else
-                  ...filtered.map(
-                    (event) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: EventCard(event: event),
-                    ),
+                return PinnedTopBar(
+                  header: _Header(
+                    userName: currentUser.fullName,
+                    onAvatarTap: () => context.go(AppRoutes.profile),
                   ),
-              ],
-            );
-          },
-        ),
+                  body: ListView(
+                    padding: const EdgeInsets.only(
+                      left: AppSpacing.pageHorizontal,
+                      right: AppSpacing.pageHorizontal,
+                      bottom: AppSpacing.bottomClearanceWithNav,
+                    ),
+                    children: [
+                      const SizedBox(height: AppSpacing.lg),
+                      _SegmentedControl(
+                        selectedIndex: _segmentIndex,
+                        onChanged: (index) async {
+                          if (index == 1) {
+                            // Create → écran de création d'événement (route plein-écran)
+                            final isCreated = await context.push<bool>(
+                              AppRoutes.eventCreate,
+                            );
+                            if (isCreated == true) {
+                              ref.invalidate(discoverEventsProvider);
+                            }
+                            return;
+                          }
+                          setState(() => _segmentIndex = index);
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Text(
+                        'Bonjour 👋',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        'Que diriez-vous d’un bon\névénement ?',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineLarge?.copyWith(fontSize: 32),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppSearchField(
+                        controller: _searchController,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _CategoryChips(
+                        selected: _selectedCategory,
+                        onChanged: (category) =>
+                            setState(() => _selectedCategory = category),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      if (filtered.isEmpty)
+                        EmptyState(
+                          icon: Icons.search_off,
+                          title: 'Aucun événement trouvé',
+                          subtitle:
+                              'Essayez une autre recherche ou une autre '
+                              'catégorie.',
+                        )
+                      else
+                        ...filtered.map(
+                          (event) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.md,
+                            ),
+                            child: EventCard(
+                              event: event,
+                              onTap: () => context.push(
+                                '${AppRoutes.eventDetail}${event.id}',
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -135,13 +152,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     final query = _searchController.text.trim().toLowerCase();
 
     return events.where((event) {
-      final matchesQuery = query.isEmpty ||
+      final matchesQuery =
+          query.isEmpty ||
           event.title.toLowerCase().contains(query) ||
           event.brandName.toLowerCase().contains(query) ||
           event.eventPlace.toLowerCase().contains(query);
 
-      final matchesCategory = _selectedCategory == null ||
-          event.type == _selectedCategory;
+      final matchesCategory =
+          _selectedCategory == null || event.type == _selectedCategory;
 
       return matchesQuery && matchesCategory;
     }).toList();
@@ -199,7 +217,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Segment Buy / Sell / Create — spec §8 (pill verre, onglet actif `#148cfa`).
+/// Segment Buy / Create — spec §8 (pill verre, onglet actif `#148cfa`).
 class _SegmentedControl extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
@@ -211,7 +229,7 @@ class _SegmentedControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Buy', 'Sell', 'Create'];
+    const labels = ['Buy', 'Create'];
 
     return GlassCard(
       mode: GlassCardMode.defaultMode,
@@ -291,22 +309,16 @@ class _CategoryChips extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.primary
-                      : AppColors.glassSubtle,
+                  color: isActive ? AppColors.primary : AppColors.glassSubtle,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   border: Border.all(
-                    color: isActive
-                        ? AppColors.primary
-                        : AppColors.glassBorder,
+                    color: isActive ? AppColors.primary : AppColors.glassBorder,
                   ),
                 ),
                 child: Text(
                   entry.value,
                   style: TextStyle(
-                    color: isActive
-                        ? Colors.white
-                        : AppColors.textPrimary,
+                    color: isActive ? Colors.white : AppColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),

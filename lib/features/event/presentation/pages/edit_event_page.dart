@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
-import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
 import 'package:ticketpass/core/widgets/page_header.dart';
+import 'package:ticketpass/core/widgets/pinned_top_bar.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_type.dart';
@@ -72,9 +73,7 @@ class _EditEventFormState extends ConsumerState<_EditEventForm> {
     _maxPlacesController = TextEditingController(
       text: widget.event.maxPlaces.toString(),
     );
-    _brandNameController = TextEditingController(
-      text: widget.event.brandName,
-    );
+    _brandNameController = TextEditingController(text: widget.event.brandName);
     _selectedDate = widget.event.startTime;
     _eventType = widget.event.type;
   }
@@ -228,6 +227,8 @@ class _EditEventFormState extends ConsumerState<_EditEventForm> {
     }
   }
 
+  // show dialogue pour demander la quantite de billets à generer
+
   @override
   Widget build(BuildContext context) {
     final dateLabel = MaterialLocalizations.of(
@@ -235,16 +236,12 @@ class _EditEventFormState extends ConsumerState<_EditEventForm> {
     ).formatMediumDate(_selectedDate);
     final timeLabel = TimeOfDay.fromDateTime(_selectedDate).format(context);
 
-    return SafeArea(
-      bottom: false,
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: AppTheme.pagePadding(
-            bottom: AppSpacing.bottomClearanceNoNav,
-          ),
-          children: [
-            PageHeader(
+    return Column(
+      children: [
+        const AppSafeTopBand(),
+        Expanded(
+          child: PinnedTopBar(
+            header: PageHeader(
               title: 'Modifier l’événement',
               showBack: true,
               trailing: PressableScale(
@@ -266,104 +263,123 @@ class _EditEventFormState extends ConsumerState<_EditEventForm> {
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Titre'),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Le titre est obligatoire.';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Description'),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'La description est obligatoire.';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _eventPlaceController,
-              decoration: const InputDecoration(labelText: 'Lieu'),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Le lieu est obligatoire.';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _maxPlacesController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Capacité max'),
-              validator: (value) {
-                final maxPlaces = int.tryParse(value ?? '');
+            body: Form(
+              key: _formKey,
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.bottomClearanceNoNav +
+                      MediaQuery.paddingOf(context).bottom,
+                ),
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: 'Titre'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Le titre est obligatoire.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'La description est obligatoire.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _eventPlaceController,
+                    decoration: const InputDecoration(labelText: 'Lieu'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Le lieu est obligatoire.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _maxPlacesController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Capacité max',
+                    ),
+                    validator: (value) {
+                      final maxPlaces = int.tryParse(value ?? '');
 
-                if (maxPlaces == null || maxPlaces <= 0) {
-                  return 'Entre une capacité supérieure à 0.';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _brandNameController,
-              decoration: const InputDecoration(labelText: 'Nom de marque'),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<EventType>(
-              initialValue: _eventType,
-              decoration: const InputDecoration(labelText: 'Type'),
-              items: EventType.values
-                  .map((type) => DropdownMenuItem(
-                        value: type,
-                        child: Text(type.label),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _eventType = value);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              readOnly: true,
-              onTap: _isLoading ? null : _selectDate,
-              decoration: InputDecoration(
-                labelText: 'Date de l’événement',
-                suffixIcon: const Icon(Icons.calendar_today),
-                hintText: dateLabel,
+                      if (maxPlaces == null || maxPlaces <= 0) {
+                        return 'Entre une capacité supérieure à 0.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _brandNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nom de marque',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<EventType>(
+                    initialValue: _eventType,
+                    decoration: const InputDecoration(labelText: 'Type'),
+                    items: EventType.values
+                        .map(
+                          (type) => DropdownMenuItem(
+                            value: type,
+                            child: Text(type.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _eventType = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    readOnly: true,
+                    onTap: _isLoading ? null : _selectDate,
+                    decoration: InputDecoration(
+                      labelText: 'Date de l’événement',
+                      suffixIcon: const Icon(Icons.calendar_today),
+                      hintText: dateLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    readOnly: true,
+                    onTap: _isLoading ? null : _selectTime,
+                    decoration: InputDecoration(
+                      labelText: 'Heure de début',
+                      suffixIcon: const Icon(Icons.schedule),
+                      hintText: timeLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  AppButton(
+                    label: 'Enregistrer les modifications',
+                    fullWidth: true,
+                    onPressed: _isLoading ? null : _saveEvent,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              readOnly: true,
-              onTap: _isLoading ? null : _selectTime,
-              decoration: InputDecoration(
-                labelText: 'Heure de début',
-                suffixIcon: const Icon(Icons.schedule),
-                hintText: timeLabel,
-              ),
-            ),
-            const SizedBox(height: 24),
-            AppButton(
-              label: 'Enregistrer les modifications',
-              fullWidth: true,
-              onPressed: _isLoading ? null : _saveEvent,
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

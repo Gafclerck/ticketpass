@@ -6,7 +6,11 @@ import 'package:ticketpass/core/widgets/app_shell.dart';
 import 'package:ticketpass/features/event/presentation/pages/create_event_page.dart';
 import 'package:ticketpass/features/event/presentation/pages/edit_event_page.dart';
 import 'package:ticketpass/features/home/presentation/screens/home_page.dart';
+import 'package:ticketpass/features/event/presentation/screens/event_detail_screen.dart';
+import 'package:ticketpass/features/event/presentation/screens/event_participants_page.dart';
 import 'package:ticketpass/features/event/presentation/screens/events_page.dart';
+import 'package:ticketpass/features/scan/presentation/screens/scan_event_tickets_page.dart';
+import 'package:ticketpass/features/ticket/presentation/screens/event_tickets_page.dart';
 import 'package:ticketpass/features/ticket/presentation/screens/my_tickets_page.dart';
 import 'package:ticketpass/features/ticket/presentation/screens/ticket_detail_page.dart';
 import 'package:ticketpass/features/profile/presentation/screens/profile_page.dart';
@@ -25,6 +29,14 @@ final GoRouter router = GoRouter(
       ),
     ),
     GoRoute(
+      path: '${AppRoutes.eventTickets}:id',
+      builder: (context, state) => AppShell(
+        child: EventTicketsPage(
+          eventId: state.pathParameters['id']!,
+        ),
+      ),
+    ),
+    GoRoute(
       path: AppRoutes.eventCreate,
       builder: (context, state) => const AppShell(child: CreateEventPage()),
     ),
@@ -37,6 +49,30 @@ final GoRouter router = GoRouter(
         }
         return AppShell(child: EditEventPage(eventId: eventId));
       },
+    ),
+    GoRoute(
+      path: '${AppRoutes.eventDetail}:id',
+      builder: (context, state) => AppShell(
+        child: EventDetailScreen(
+          eventId: state.pathParameters['id']!,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '${AppRoutes.eventParticipants}:id',
+      builder: (context, state) => AppShell(
+        child: EventParticipantsPage(
+          eventId: state.pathParameters['id']!,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '${AppRoutes.scan}:eventId',
+      builder: (context, state) => AppShell(
+        child: ScanEventTicketsPage(
+          eventId: state.pathParameters['eventId']!,
+        ),
+      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

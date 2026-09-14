@@ -1,5 +1,18 @@
 # TickerPass (Flutter)
 
+## Méthodologie de travail (screen par screen)
+
+Les modifications se font **écran après écran**, jamais plusieurs en même temps. Chaque étape est **validée par l'utilisateur avant de passer à la suivante** (il n'y a jamais deux étapes exécutées d'affilée sans validation intermédiaire).
+
+1. **Analyse & diagnostic** de l'écran → on identifie ce qui ne va pas.
+2. **Plan de correction** (validé par l'utilisateur).
+3. **Évaluation de l'étendue** : quel est l'impact ? Est-ce que ça touche d'autres écrans ?
+4. **Plan définitif puis exécution** (validé par l'utilisateur).
+5. **Tests** (règles RG, `flutter analyze` 0 issue, `flutter test` verts) pour s'assurer que rien ne casse.
+6. **Commit**.
+
+Ensuite on recommence le même cycle sur l'écran suivant.
+
 ## Commandes
 - `flutter analyze` — vérification statique (doit rester à 0 issue).
 - `flutter test` — tests (fake repo UC billets + boot widget).

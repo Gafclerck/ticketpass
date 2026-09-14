@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Scanner de billets (UC10) -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="ticketpass"
         android:name="${applicationName}"

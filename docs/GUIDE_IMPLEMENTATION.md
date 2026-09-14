@@ -2,6 +2,7 @@
 
 Document de référence pour comprendre ce qui est implémenté et contribuer.
 Source de vérité produit : `docs/FLUTTER_PROTOTYPE_SPEC.md` (UI) et `docs/classe.md` (domaine).
+Plan de réalignement courant : `docs/ROADMAP_REALIGNEMENT.md`.
 Règles complémentaires : `AGENTS.md`.
 
 ---
@@ -21,6 +22,8 @@ core/         tokens DS · widgets DS · routage · app shell
 - **Dépendances** : presentation → domain (jamais l'inverse) ; data → domain seulement.
 - **Entités** : classes manuelles conformes à `docs/classe.md` (`copyWith` écrit à la main, pas de freezed).
 - **Fakes** : `MockEventRepository`, `FakeTicketRepository` simulent la latence et les règles métier. Les contrats datasources (`ticket_local_datasource`…) existent mais ne sont pas branchés : **le provider Riverpod est l'unique point de bascule fake → réel**.
+- **Sécurité QR (UC5)** : `core/security/ticket_signature_service.dart` signe `(ticketId, eventId)` en HMAC-SHA256 (clé dev en source, à externaliser en prod) et expose `buildQrPayload`/`verifyQrPayload` pour le scan hors-ligne. Dépendance `crypto`.
+- **Scanner (UC10-11)** : `features/scan`, caméra `mobile_scanner` (permission `CAMERA` ajoutée sur Android + `NSCameraUsageDescription` sur iOS), repli « Saisie manuelle » ; accès réservé organisateur/contrôleur ; transition `VALID → USED` via `validateTicket`. `scanUseCameraProvider` (override `false` en test).
 - **Identité** : `features/auth/presentation/providers/current_user_provider.dart` expose l'utilisateur démo (`User`). C'est la **source unique** ; l'ancien `core/providers/current_user_provider.dart` a été supprimé.
 
 ### Providers existants (résumé)
@@ -35,7 +38,13 @@ core/         tokens DS · widgets DS · routage · app shell
 | `createEvent/updateEvent/deleteEventProvider` | Provider\<UseCase> | mutations |
 | `myTicketsProvider(userId)` | FutureProvider.family | billets de l'user |
 | `ticketProvider(ticketId)` | FutureProvider.family | détail billet |
-| `importTicketProvider` | Provider\<UseCase> | UC7 import (code → billet VALID) |
+| `generateTicketsProvider` | Provider\<GenerateTickets> | UC4 générer N billets pour un événement |
+| `getTicketsForEventProvider` / `eventTicketsProvider(eventId)` | Provider / FutureProvider.family | UC6 liste des billets générés d'un événement (vue organisateur) |
+| `acquireTicketProvider` | Provider\<AcquireTicket> | UC19 distribution automatique d'un billet (achat) |
+| `eventParticipantsProvider(eventId)` | FutureProvider.family | détenteurs de billets d'un événement (page Participants) |
+| `eventRolesProvider(eventId)` / `assignRoleProvider` | FutureProvider.family / Provider | UC24 rôles + désignation d'un contrôleur |
+| `validateTicketProvider` | Provider\<ValidateTicket> | UC11 transition `VALID → USED` (scanner) |
+| `scanUseCameraProvider` | Provider\<bool> | caméra du scanner (`true` en app ; `false` dans les tests widget) |
 
 ---
 
@@ -87,6 +96,7 @@ core/         tokens DS · widgets DS · routage · app shell
 | **Pages plein-écran = GoRoute racine + AppShell** | `Navigator.push` depuis une branche atterrit sur le navigateur de la branche → la nav flottante reste au-dessus et masque le contenu. Toutes les pages plein-écran (`/ticket/:id`, `/event/create`, `/event/edit?id=`) sont des routes racine |
 | Clearance unifiée `bottomClearanceWithNav` (112) | le dernier item d'un onglet doit rester au-dessus de la nav (92) + marge (20) |
 | Nav bar dans un `SafeArea` | inset des appareils à encoche (home indicator) pas pris en compte avec un `Positioned(bottom:16)` |
+| **Top bar fixe + bande safe-area opaque** | les icônes système (heure/batterie/réseau) doivent rester sur fond plein `#080808`, jamais sur du contenu (image/texte/halo). Deux widgets : `AppTopBar` (barre fixe hors scroll pour les sous-écrans plein-écran) et `AppSafeTopBand` (bande opaque, headers éditoriaux scrollables des onglets conservés). `SystemUiOverlayStyle.dark` appliqué au niveau racine (`main.dart`) : icônes claires sur fond sombre. Le `FloatingHeader` du détail événement est posé sous une `AppSafeTopBand`. |
 | Identité unifiée (`currentUserProvider`) | éviter deux sources de vérité (l'ancien provider core `currentUserIdProvider` a été supprimé) |
 | `getEventById` ajouté au repo | l'édition charge par id (deep-linkable, cache par `eventProvider`) et prépare l'EventDetail à venir |
 | QR réel (`qr_flutter`) | coût marginal vs QR décoratif, utile au scan futur par l'agent |
@@ -97,13 +107,15 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 4. Déplacements / mofidications notables du code existant
 
 - **`app_theme.dart` réécrit** + tokens créés (`app_spacing/radius/typography`), `app_colors` étendu (états, glass, success/error). Ancien `app_text_styles.dart` : **non utilisé**, à supprimer.
-- **`app_router.dart`** : branché sur `AppShell` ; les 4 onglets dans `StatefulShellRoute.indexedStack` ; nav bar dans un `SafeArea` ; ajout des routes racine `/event/create` et `/event/edit`.
+- **`app_router.dart`** : branché sur `AppShell` ; les 4 onglets dans `StatefulShellRoute.indexedStack` ; nav bar dans un `SafeArea` ; ajout des routes racine `/event/:id` (EventDetail), `/event/participants/:id`, `/scan/:eventId`, `/event/create` et `/event/edit`.
 - **`app_bottom_navigation_bar.dart`** : inchangé structurellement (`maListeIcon` = 4 onglets).
 - **`status_badge.dart`** : déplacé de `features/ticket/.../widgets` vers `core/widgets` (générique) ; wrapper `TicketStatusBadge` côté ticket ; imports des écrans mis à jour.
 - **`home_page.dart` / `profile_page.dart`** : placeholders → vrais écrans spec §8 (segment Buy/Sell/Create, recherche + chips, `_Header` avatar → profil ; UserCard stats dérivées des providers, menu, logout factice).
-- **`my_tickets_page.dart` / `events_page.dart`** : FAB supprimés → `EmptyState` + tuiles CTA (`_ImportTile`, `_CreateTile`) + `TicketCard`/`EventCard` ; padding `bottomClearanceWithNav`.
+- **Top bar fixe & safe area (`app_top_bar.dart`)** : les sous-écrans plein-écran (`ticket_detail`, `event_tickets`, `event_participants`, `create/edit_event`, `scan`) = `Column[AppTopBar, Expanded(scroll)]` — la barre (retour/titre/action) est HORS scroll, fond `#080808` derrière la zone d'encoche. Les 4 onglets gardent leur header éditorial scrollable sous `AppSafeTopBand`. L'`EventDetailScreen` pose son `FloatingHeader` sous une `AppSafeTopBand`. L'ancien Σ `SafeArea + PageHeader en tête de ListView` est abandonné. `SystemUiOverlayStyle.dark` (icônes claires) posé au niveau racine dans `main.dart` et sur `appBarTheme`.
+- **`my_tickets_page.dart` / `events_page.dart`** : FAB supprimés → `EmptyState` + tuiles CTA (`_CreateTile`) + `TicketCard`/`EventCard` ; padding `bottomClearanceWithNav`. L'import de billet (UC7) est retiré : un billet ne s'obtient que par la distribution automatique (UC19) depuis le détail d'un événement.
 - **`create_event_page.dart` / `edit_event_page.dart`** : AppBar → `PageHeader` custom, pickers date/heure → champs verre `readOnly`, boutons → `AppButton` ; `EditEventPage` charge par `eventId` (route racine).
 - **`ticket_detail_page.dart`** : AppBar → `PageHeader` (`Mon billet`), `Card` → `GlassCard` elevated, QR sur fond blanc.
+- **`event_detail_screen.dart`** : redesigné selon la spec §8 — `FloatingHeader` (retour/titre/partage) flottant sur le hero 320px (radius 32), `OrganizerRow` (avatar 48 + nom + lieu + cœur), métadonnées Date/Horaire (chips 56px), section « À propos », bloc **Jauge** (organisateur seul), et CTA par rôle : barre basse fixe (visiteur « Obtenir un billet » → UC19 puis redirection `/ticket/:id`, porteur « Voir mon billet ») ou pile flottante droite (organisateur : Générer primaire 52px + Voir les billets + Participants + Modifier + Scanner ; contrôleur : Scanner).
 - **`MockEventRepository`** : catalogue public + `demo()` (seed 3 événements) + `getEventById`.
 - **`widget_test.dart`** : l'assertion "Home" → "TicketPass" (nouveau header).
 
@@ -125,7 +137,7 @@ core/         tokens DS · widgets DS · routage · app shell
 2. Ajouter la méthode au contrat `EventRepository` / `TicketRepository`.
 
 **Data (`data/`)**
-3. Implémenter la méthode dans le fake (`MockEventRepository`, `FakeTicketRepository`) avec latence simulée + règles métier (ex : un billet `used` ne se réimporte pas).
+3. Implémenter la méthode dans le fake (`MockEventRepository`, `FakeTicketRepository`) avec latence simulée + règles métier (ex : un billet `used` ne se revalide pas).
 4. `data/models/` : mapping si le format fake ≠ entité.
 
 **Présentation (`presentation/`)**
@@ -134,6 +146,7 @@ core/         tokens DS · widgets DS · routage · app shell
 7. Écran :
    - Utiliser les tokens (`AppSpacing`, `AppRadius`, `AppColors`) et les widgets DS (jamais de `Card`/`AppBar`/`FilledButton` bruts).
    - Choix du routage : plein-écran → route racine (`app_router.dart` + constante dans `app_routes.dart`) + `AppShell` ; sinon branche.
+   - Top bar : sous-écran plein-écran → `Column[AppTopBar(...), Expanded(scroll)]` (barre fixe, retour/titre/action). Onglet → `AppSafeTopBand` en haut + header éditorial scrollable. La zone de la barre de statut reste toujours opaque (`#080808`), jamais de contenu scroller sous les icônes système.
    - Pagination des onglets : `AppTheme.pagePadding(bottom: AppSpacing.bottomClearanceWithNav)`.
 
 **Validation**
@@ -145,5 +158,5 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 7. Validation courante
 
 - `flutter analyze` → `No issues found!`
-- `flutter test` → 8 tests verts (7 UC billets sur fake + 1 boot app).
+- `flutter test` → tous les tests verts (UC1-11 + boot app, `app_top_bar_test`, 42 tests).
 - Lint/sorties Windows : warnings CRLF/LF bénins.

@@ -1,4 +1,5 @@
 import '../entities/event.dart';
+import '../entities/event_user_role.dart';
 
 /// Contrat du dépôt d'événements.
 ///
@@ -20,4 +21,12 @@ abstract class EventRepository {
   /// Détail d'un événement (nécessaire à la page d'édition et à
   /// l'EventDetailScreen à venir).
   Future<Event> getEventById(String eventId);
+
+  /// Rôles d'un utilisateur sur un événement.
+  Future<List<EventUserRole>> getRoles(String eventId);
+
+  /// Ajoute (ou remplace) un rôle pour un utilisateur sur un événement
+  /// (UC24 — désignation de contrôleur, etc.). L'organisateur est attribué
+  /// automatiquement à la création.
+  Future<void> assignRole(EventUserRole role);
 }
