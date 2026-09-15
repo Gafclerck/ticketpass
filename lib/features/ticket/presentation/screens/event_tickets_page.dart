@@ -17,7 +17,6 @@ import '../widgets/ticket_status_badge.dart';
 enum _TicketFilter { all, valid, used }
 
 /// UC6 — Liste des billets générés pour un événement (vue organisateur).
-/// À ne pas confondre avec `my_tickets_page.dart` (UC9, vue porteur).
 class EventTicketsPage extends ConsumerWidget {
   final String eventId;
 

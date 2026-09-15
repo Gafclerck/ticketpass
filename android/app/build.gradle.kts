@@ -1,5 +1,8 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -23,6 +26,19 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    signingConfigs {
+        // Keystore de debug PARTAGÉ par toute l'équipe (committé dans le repo),
+        // au lieu du ~/.android/debug.keystore généré différemment sur chaque
+        // machine. Nécessaire pour que le SHA1 enregistré dans Firebase
+        // (reCAPTCHA de FirebaseAuth) soit valide pour tout le monde.
+        getByName("debug") {
+            storeFile = file("shared-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

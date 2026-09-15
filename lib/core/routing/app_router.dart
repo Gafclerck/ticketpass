@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
 import 'package:ticketpass/core/widgets/app_bottom_navigation_bar.dart';
 import 'package:ticketpass/core/widgets/app_shell.dart';
+import 'package:ticketpass/features/auth/domain/entities/user.dart';
+import 'package:ticketpass/features/auth/presentation/providers/auth_providers.dart';
+import 'package:ticketpass/features/auth/presentation/screens/login_page.dart';
+import 'package:ticketpass/features/auth/presentation/screens/register_page.dart';
 import 'package:ticketpass/features/event/presentation/pages/create_event_page.dart';
 import 'package:ticketpass/features/event/presentation/pages/edit_event_page.dart';
 import 'package:ticketpass/features/home/presentation/screens/home_page.dart';
@@ -12,10 +17,45 @@ import 'package:ticketpass/features/ticket/presentation/screens/my_tickets_page.
 import 'package:ticketpass/features/ticket/presentation/screens/ticket_detail_page.dart';
 import 'package:ticketpass/features/profile/presentation/screens/profile_page.dart';
 import 'app_routes.dart';
+import 'auth_redirect_notifier.dart';
 
-final GoRouter router = GoRouter(
-  initialLocation: AppRoutes.home,
-  routes: [
+/// UC14 — le routeur dépend de l'état d'auth, donc c'est un provider (pas un
+/// simple `final` top-level) : `ref` permet de lire/écouter l'auth pour la
+/// garde de route.
+final routerProvider = Provider<GoRouter>((ref) {
+  final authNotifier = AuthRedirectNotifier();
+  // Une seule souscription au flux d'auth, partagée avec currentUserProvider
+  // via ce même authStateChangesProvider — évite la race condition entre
+  // deux souscriptions indépendantes à authStateChanges.
+  ref.listen<AsyncValue<User?>>(authStateChangesProvider, (previous, next) {
+    next.whenData(authNotifier.update);
+  }, fireImmediately: true);
+  ref.onDispose(authNotifier.dispose);
+
+  return GoRouter(
+    initialLocation: AppRoutes.home,
+    refreshListenable: authNotifier,
+    redirect: (context, state) {
+      final isLoggedIn = authNotifier.currentUser != null;
+      final isAuthRoute =
+          state.matchedLocation == AppRoutes.login ||
+          state.matchedLocation == AppRoutes.register;
+
+      // Tant que le tout premier check Firebase n'est pas résolu, on
+      // n'autorise que login/register — pas de flash sur une page protégée.
+      if (!authNotifier.isReady) {
+        return isAuthRoute ? null : AppRoutes.login;
+      }
+
+      if (!isLoggedIn) {
+        return isAuthRoute ? null : AppRoutes.login;
+      }
+      if (isLoggedIn && isAuthRoute) {
+        return AppRoutes.home;
+      }
+      return null;
+    },
+    routes: [
     // routes racine hors StatefulShellBranch : pas de barre de navigation
     GoRoute(
       path: '${AppRoutes.ticketDetail}:id',
@@ -32,6 +72,14 @@ final GoRouter router = GoRouter(
           eventId: state.pathParameters['id']!,
         ),
       ),
+    ),
+    GoRoute(
+      path: AppRoutes.login,
+      builder: (context, state) => const AppShell(child: LoginPage()),
+    ),
+    GoRoute(
+      path: AppRoutes.register,
+      builder: (context, state) => const AppShell(child: RegisterPage()),
     ),
     GoRoute(
       path: AppRoutes.eventCreate,
@@ -119,5 +167,6 @@ final GoRouter router = GoRouter(
         ),
       ],
     ),
-  ],
-);
+    ],
+  );
+});

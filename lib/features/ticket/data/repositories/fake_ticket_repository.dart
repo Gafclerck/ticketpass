@@ -76,7 +76,7 @@ class FakeTicketRepository implements TicketRepository {
     required String eventId,
   }) {
     final uniqueCode = const Uuid().v4();
-    final signature = TicketSignatureService.sign(id, eventId);
+    final signature = TicketSignatureService.buildQrPayload(id, eventId);
     return Ticket(
       id: id,
       status: status,

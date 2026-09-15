@@ -17,7 +17,7 @@ abstract class TicketRepository {
 
   Future<List<Ticket>> generateTickets(String eventId, int quantity);
 
-  // UC4 -  Afficher les tickets génèrés d'un organisateur
+  // UC6 -  Afficher les tickets génèrés d'un organisateur
 
   Future<List<Ticket>> getTicketsForEvent(String eventId);
 }

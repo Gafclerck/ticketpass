@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Exception : keystore de DEBUG partagé par toute l'équipe (mot de passe
+# standard "android", jamais utilisé pour signer une release) — nécessaire
+# pour que tout le monde build avec le même SHA1 enregistré dans Firebase.
+!app/shared-debug.keystore
