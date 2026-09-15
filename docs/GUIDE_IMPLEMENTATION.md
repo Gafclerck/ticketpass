@@ -24,13 +24,13 @@ core/         tokens DS · widgets DS · routage · app shell
 - **Fakes** : `MockEventRepository`, `FakeTicketRepository` simulent la latence et les règles métier. Les contrats datasources (`ticket_local_datasource`…) existent mais ne sont pas branchés : **le provider Riverpod est l'unique point de bascule fake → réel**.
 - **Sécurité QR (UC5)** : `core/security/ticket_signature_service.dart` signe `(ticketId, eventId)` en HMAC-SHA256 (clé dev en source, à externaliser en prod) et expose `buildQrPayload`/`verifyQrPayload` pour le scan hors-ligne. Dépendance `crypto`.
 - **Scanner (UC10-11)** : `features/scan`, caméra `mobile_scanner` (permission `CAMERA` ajoutée sur Android + `NSCameraUsageDescription` sur iOS), repli « Saisie manuelle » ; accès réservé organisateur/contrôleur ; transition `VALID → USED` via `validateTicket`. `scanUseCameraProvider` (override `false` en test).
-- **Identité** : `features/auth/presentation/providers/current_user_provider.dart` expose l'utilisateur démo (`User`). C'est la **source unique** ; l'ancien `core/providers/current_user_provider.dart` a été supprimé.
+- **Identité & auth** : `features/auth` est un module complet (domain/data/presentation) branché sur **Firebase réel** — Auth (`FirebaseAuth`), profil Firestore `users/{uid}` (fullName + profileUrl) et avatar sur Storage. `User.id` = uid Firebase ; **plus aucun fake en prod** : `authUserRepositoryProvider` → `FirebaseAuthRepository`. `currentUserProvider` (dérivé d'`authControllerProvider`) est la **source unique** ; l'ancien provider core `currentUserIdProvider` et l'utilisateur démo ont été supprimés. Le guard du routeur (`AuthRefreshListenable` + `redirect` GoRouter) protège tous les écrans ; en test, un stub mocktail (`test/helpers/test_auth.dart`) injecte un utilisateur. L'état de session est restauré de façon **synchrone** (`FirebaseAuth.currentUser`) pour ne jamais rendre un écran protégé avec un user null.
 
 ### Providers existants (résumé)
 
 | Provider | Type | Rôle |
 |---|---|---|
-| `currentUserProvider` | Provider\<User> | utilisateur courant démo (`demo-user-id`) |
+| `currentUserProvider` | Provider\<User?> | utilisateur courant (Firebase Auth) ; `!` garanti par le redirect |
 | `eventRepositoryProvider` | Provider\<EventRepository> | `MockEventRepository.demo()` (catalogue seed de 3 événements) |
 | `myEventsProvider(userId)` | FutureProvider.family | événements créés par l'user |
 | `discoverEventsProvider` | FutureProvider | catalogue public (Home) |
@@ -45,6 +45,9 @@ core/         tokens DS · widgets DS · routage · app shell
 | `eventRolesProvider(eventId)` / `assignRoleProvider` | FutureProvider.family / Provider | UC24 rôles + désignation d'un contrôleur |
 | `validateTicketProvider` | Provider\<ValidateTicket> | UC11 transition `VALID → USED` (scanner) |
 | `scanUseCameraProvider` | Provider\<bool> | caméra du scanner (`true` en app ; `false` dans les tests widget) |
+| `authUserRepositoryProvider` | Provider\<AuthUserRepository> | `FirebaseAuthRepository` (réel) — seul point d'injection auth |
+| `authControllerProvider` | NotifierProvider\<AuthController, User?> | état auth (login/logout/updateProfile) + notifie `authRefreshListenable` |
+| `avatar_providers` (`imagePickerProvider`, `pickAndUploadAvatar`) | Provider / fonction | sélection galerie + upload Storage (avatar Profil/Register) |
 
 ---
 
@@ -101,6 +104,9 @@ core/         tokens DS · widgets DS · routage · app shell
 | `getEventById` ajouté au repo | l'édition charge par id (deep-linkable, cache par `eventProvider`) et prépare l'EventDetail à venir |
 | QR réel (`qr_flutter`) | coût marginal vs QR décoratif, utile au scan futur par l'agent |
 | Invalidation `myEvents` **et** `discoverEvents` après mutation | un événement créé doit apparaître partout ; `discoverEventsProvider` seul serait stale |
+| **Auth via Firebase, pas de fake en prod** | directive produit : remplacer les fakes durée par du réel. Les tests injectent un stub mocktail au niveau du contrat `AuthUserRepository` |
+| **Session restorée de façon synchrone** | `FirebaseAuth.currentUser` (getter synchrone du repo) pose état + redirect AVANT le 1er frame ; ajouter un `authControllerProvider` sur `authStateChanges` seulement ne suffirait pas (1er frame du routeur → user null) |
+| **Routage auth : redirect + `AuthRefreshListenable`** | routes `/login`/`/register` racines (hors shell) ; `pendingLocation` mémorisé → retour sur la destination après connexion ; pages auth ≠ barre de navigation |
 
 ---
 
@@ -117,7 +123,11 @@ core/         tokens DS · widgets DS · routage · app shell
 - **`ticket_detail_page.dart`** : AppBar → `PageHeader` (`Mon billet`), `Card` → `GlassCard` elevated, QR sur fond blanc.
 - **`event_detail_screen.dart`** : redesigné selon la spec §8 — `FloatingHeader` (retour/titre/partage) flottant sur le hero 320px (radius 32), `OrganizerRow` (avatar 48 + nom + lieu + cœur), métadonnées Date/Horaire (chips 56px), section « À propos », bloc **Jauge** (organisateur seul), et CTA par rôle : barre basse fixe (visiteur « Obtenir un billet » → UC19 puis redirection `/ticket/:id`, porteur « Voir mon billet ») ou pile flottante droite (organisateur : Générer primaire 52px + Voir les billets + Participants + Modifier + Scanner ; contrôleur : Scanner).
 - **`MockEventRepository`** : catalogue public + `demo()` (seed 3 événements) + `getEventById`.
-- **`widget_test.dart`** : l'assertion "Home" → "TicketPass" (nouveau header).
+- **`app_router.dart`** : ajout du guard auth — `refreshListenable: authRefreshListenable`, `redirect` vers `/login` si déconnecté / vers `pendingLocation` si connecté, routes racine `/login` et `/register` ; `AuthRefreshListenable.rememberPending/consumePending` mémorise la destination visée.
+- **`main.dart`** : `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)` en try/catch avec repli « Firebase non configuré » ; `MyApp` est un `ConsumerWidget` qui watch `authControllerProvider` (souscription auth dès le boot).
+- **`ProfilePage`** : réel écran profil — avatar cliquable (`pickAndUploadAvatar` → `updateProfile`), signOut fonctionnel via `authController`.
+- **Tests widget auth** : `test/helpers/test_auth.dart` (stub mocktail + `authUserRepositoryOverride` qui pré-notifie le listenable + `resetAuthRouting`) ; `auth_flow_test.dart` couvre guard/login/register.
+- **`widget_test.dart`** : l'assertion "Home" → "TicketPass" (nouveau header) + override auth.
 
 ---
 
@@ -158,5 +168,5 @@ core/         tokens DS · widgets DS · routage · app shell
 ## 7. Validation courante
 
 - `flutter analyze` → `No issues found!`
-- `flutter test` → tous les tests verts (UC1-11 + boot app, `app_top_bar_test`, 42 tests).
+- `flutter test` → tous les tests verts (UC au domaine + data, 8 fichier widget tests dont login/register/guard, 78 tests).
 - Lint/sorties Windows : warnings CRLF/LF bénins.

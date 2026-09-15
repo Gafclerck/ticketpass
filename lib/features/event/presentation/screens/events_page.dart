@@ -28,7 +28,7 @@ class EventsPage extends ConsumerWidget {
     final isCreated = await context.push<bool>(AppRoutes.eventCreate);
 
     if (isCreated == true) {
-      ref.invalidate(myEventsProvider(ref.read(currentUserProvider).id));
+      ref.invalidate(myEventsProvider(ref.read(currentUserProvider)!.id));
       ref.invalidate(discoverEventsProvider);
     }
   }
@@ -40,13 +40,13 @@ class EventsPage extends ConsumerWidget {
   ) async {
     await context.push('${AppRoutes.eventDetail}${event.id}');
 
-    ref.invalidate(myEventsProvider(ref.read(currentUserProvider).id));
+    ref.invalidate(myEventsProvider(ref.read(currentUserProvider)!.id));
     ref.invalidate(discoverEventsProvider);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = ref.watch(currentUserProvider).id;
+    final userId = ref.watch(currentUserProvider)!.id;
     final eventsAsync = ref.watch(myEventsProvider(userId));
 
     return Scaffold(

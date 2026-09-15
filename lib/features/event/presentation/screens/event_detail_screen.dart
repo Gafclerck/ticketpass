@@ -162,7 +162,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final eventAsync = ref.watch(eventProvider(widget.eventId));
-    final userId = ref.watch(currentUserProvider).id;
+    final userId = ref.watch(currentUserProvider)!.id;
     final rolesAsync = ref.watch(eventRolesProvider(widget.eventId));
     final myTicketsAsync = ref.watch(myTicketsProvider(userId));
     final participantsAsync = ref.watch(

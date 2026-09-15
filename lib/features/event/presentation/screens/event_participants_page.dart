@@ -57,7 +57,7 @@ class EventParticipantsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = ref.watch(currentUserProvider).id;
+    final userId = ref.watch(currentUserProvider)!.id;
     final rolesAsync = ref.watch(eventRolesProvider(eventId));
     final participantsAsync = ref.watch(eventParticipantsProvider(eventId));
     final eventAsync = ref.watch(eventProvider(eventId));

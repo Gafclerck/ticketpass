@@ -22,7 +22,7 @@ class MyTicketsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = ref.watch(currentUserProvider).id;
+    final userId = ref.watch(currentUserProvider)!.id;
     final ticketsAsync = ref.watch(myTicketsProvider(userId));
 
     return Scaffold(

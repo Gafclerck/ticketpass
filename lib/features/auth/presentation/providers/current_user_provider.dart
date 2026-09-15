@@ -1,15 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ticketpass/features/auth/domain/entities/user.dart';
+import 'package:ticketpass/features/auth/presentation/providers/auth_providers.dart';
 
-/// Utilisateur courant (démo) — remplacé par l'authentification (Firebase
-/// Auth) au sprint d'infrastructure. Seul point de bascule de la présentation.
-final currentUserProvider = Provider<User>((ref) {
-  return const User(
-    id: 'demo-user-id',
-    email: 'alice@exemple.fr',
-    password: '',
-    fullName: 'Alice Martin',
-    profileUrl: '',
-    authId: 'demo-auth-id',
-  );
+/// Identité courante — source unique pour la présentation.
+///
+/// Dérivée de [authControllerProvider] (Firebase Auth). Le guard du routeur
+/// garantit qu'aucun écran protégé n'est affiché sans utilisateur connecté ;
+/// les consommateurs utilisent donc `ref.watch(currentUserProvider)!.id`.
+final currentUserProvider = Provider<User?>((ref) {
+  return ref.watch(authControllerProvider);
 });

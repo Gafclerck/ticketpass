@@ -5,8 +5,10 @@ import 'package:ticketpass/core/routing/app_router.dart';
 import 'package:ticketpass/core/routing/app_routes.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
+import '../../helpers/test_auth.dart';
 
 void main() {
+  setUp(() => resetAuthRouting());
   Future<void> pumpCreate(WidgetTester tester) async {
     tester.view.physicalSize = const Size(800, 1800);
     tester.view.devicePixelRatio = 1.0;
@@ -14,6 +16,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [authUserRepositoryOverride()],
         child: MaterialApp.router(routerConfig: router),
       ),
     );

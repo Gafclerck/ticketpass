@@ -16,10 +16,8 @@ part 'app_database.g.dart';
 class Users extends Table {
   TextColumn get id => text()();
   TextColumn get email => text().unique()();
-  TextColumn get password => text()();
   TextColumn get fullName => text()();
   TextColumn get profileUrl => text().nullable()();
-  TextColumn get authId => text().unique()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -69,5 +67,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  // 1 → 2 : suppression des colonnes Users.password / Users.authId
+  // (identité = uid Firebase, mot de passe jamais stocké).
+  int get schemaVersion => 2;
 }

@@ -156,7 +156,7 @@ class _ScanEventTicketsPageState extends ConsumerState<ScanEventTicketsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = ref.watch(currentUserProvider).id;
+    final userId = ref.watch(currentUserProvider)!.id;
     final rolesAsync = ref.watch(eventRolesProvider(widget.eventId));
     final eventAsync = ref.watch(eventProvider(widget.eventId));
 

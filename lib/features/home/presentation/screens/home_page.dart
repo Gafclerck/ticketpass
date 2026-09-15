@@ -44,7 +44,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(discoverEventsProvider);
-    final currentUser = ref.watch(currentUserProvider);
+    final currentUser = ref.watch(currentUserProvider)!;
 
     return Scaffold(
       backgroundColor: Colors.transparent,

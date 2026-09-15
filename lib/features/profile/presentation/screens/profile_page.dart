@@ -14,6 +14,8 @@ import 'package:ticketpass/core/widgets/pinned_top_bar.dart';
 import 'package:ticketpass/core/widgets/pressable_scale.dart';
 import 'package:ticketpass/core/widgets/user_avatar.dart';
 import 'package:ticketpass/features/auth/domain/entities/user.dart';
+import 'package:ticketpass/features/auth/presentation/providers/auth_providers.dart';
+import 'package:ticketpass/features/auth/presentation/providers/avatar_providers.dart';
 import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
 import 'package:ticketpass/features/event/presentation/providers/event_providers.dart';
 import 'package:ticketpass/features/ticket/domain/entities/ticket_status.dart';
@@ -21,16 +23,62 @@ import 'package:ticketpass/features/ticket/presentation/providers/ticket_provide
 
 /// Onglet Profil — spec `FLUTTER_PROTOTYPE_SPEC.md` §8 « ProfileScreen ».
 ///
-/// UserCard (avatar/identité) + 3 stats dérivées + menu (Mes événements,
-/// Paramètres, Support…) + bouton de déconnexion. Statistiques calculées
-/// depuis les providers (contrairement aux valeurs codées en dur de la spec,
-/// incohérentes avec le reste de l'app).
-class ProfilePage extends ConsumerWidget {
+/// UserCard (avatar/identité, avatar modifiable en tap) + 3 stats dérivées +
+/// menu + déconnexion réelle (Firebase Auth). Statistiques calculées depuis
+/// les providers.
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  bool _isUploadingAvatar = false;
+
+  Future<void> _changeAvatar() async {
+    final user = ref.read(currentUserProvider);
+    if (user == null || _isUploadingAvatar) return;
+
+    setState(() => _isUploadingAvatar = true);
+    try {
+      final url = await pickAndUploadAvatar(ref, userId: user.id);
+      if (url != null) {
+        await ref
+            .read(authControllerProvider.notifier)
+            .updateProfile(profileUrl: url);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de mettre à jour la photo de profil.'),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await ref.read(authControllerProvider.notifier).signOut();
+      // Déconnecté : le redirect du routeur ramène sur /login.
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('Impossible de se déconnecter.')),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider)!;
     final userId = user.id;
     final eventsCount = ref.watch(myEventsProvider(userId)).value?.length ?? 0;
     final tickets = ref.watch(myTicketsProvider(userId)).value ?? const [];
@@ -60,7 +108,11 @@ class ProfilePage extends ConsumerWidget {
                 ),
                 children: [
                   const SizedBox(height: AppSpacing.lg),
-                  _UserCard(user: user),
+                  _UserCard(
+                    user: user,
+                    isUploading: _isUploadingAvatar,
+                    onAvatarTap: _changeAvatar,
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   _StatsRow(
                     eventsCount: eventsCount,
@@ -80,15 +132,7 @@ class ProfilePage extends ConsumerWidget {
                   AppButton(
                     label: 'Se déconnecter',
                     variant: AppButtonVariant.secondary,
-                    onPressed: () => ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Déconnexion — auth à venir (sprint infras)',
-                          ),
-                        ),
-                      ),
+                    onPressed: _signOut,
                   ),
                 ],
               ),
@@ -102,8 +146,14 @@ class ProfilePage extends ConsumerWidget {
 
 class _UserCard extends StatelessWidget {
   final User user;
+  final bool isUploading;
+  final VoidCallback onAvatarTap;
 
-  const _UserCard({required this.user});
+  const _UserCard({
+    required this.user,
+    required this.isUploading,
+    required this.onAvatarTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -111,14 +161,46 @@ class _UserCard extends StatelessWidget {
       mode: GlassCardMode.elevated,
       child: Column(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.avatarBackground,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
+          PressableScale(
+            onTap: isUploading ? null : onAvatarTap,
+            pressedScale: 0.95,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.avatarBackground,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: isUploading
+                      ? const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
+                        )
+                      : UserAvatar(size: 80, src: user.profileUrl, name: user.fullName),
+                ),
+                Positioned(
+                  right: -4,
+                  bottom: -4,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.background, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.photo_camera_outlined,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: UserAvatar(size: 80, name: user.fullName),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(

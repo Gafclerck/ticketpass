@@ -106,7 +106,7 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
     );
 
     try {
-      final userId = ref.read(currentUserProvider).id;
+      final userId = ref.read(currentUserProvider)!.id;
       await ref.read(createEventProvider).call(event, userId: userId);
 
       if (!mounted) return;
