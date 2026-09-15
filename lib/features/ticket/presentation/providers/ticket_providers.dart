@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ticketpass/features/ticket/domain/usecases/generate_tickets.dart';
 
-import '../../data/repositories/fake_ticket_repository.dart';
+import '../../../../core/database/database_provider.dart';
+import '../../data/repositories/drift_ticket_repository.dart';
 import '../../domain/entities/ticket.dart';
 import '../../domain/repositories/ticket_repository.dart';
 import '../../domain/usecases/get_my_tickets.dart';
@@ -9,10 +10,9 @@ import '../../domain/usecases/get_ticket.dart';
 import '../../domain/usecases/get_tickets_for_event.dart';
 import '../../domain/usecases/import_ticket.dart';
 
-/// Point de bascule : demain, [TicketRepository] sera une implémentation
-/// drift/Firestore. Seul CE provider changera.
+/// UC15 — persistance locale (drift/SQLite), remplace `FakeTicketRepository`.
 final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
-  return FakeTicketRepository.demo();
+  return DriftTicketRepository(ref.watch(appDatabaseProvider));
 });
 
 final importTicketProvider = Provider<ImportTicket>((ref) {

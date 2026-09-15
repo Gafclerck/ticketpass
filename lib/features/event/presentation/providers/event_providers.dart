@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock_event_repository.dart';
+import '../../../../core/database/database_provider.dart';
+import '../../data/repositories/drift_event_repository.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../../domain/usecases/create_event.dart';
@@ -10,8 +11,9 @@ import '../../domain/usecases/get_event_by_id.dart';
 import '../../domain/usecases/get_my_events.dart';
 import '../../domain/usecases/update_event.dart';
 
+/// UC15 — persistance locale (drift/SQLite), remplace `MockEventRepository`.
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
-  return MockEventRepository.demo();
+  return DriftEventRepository(ref.watch(appDatabaseProvider));
 });
 
 final createEventProvider = Provider<CreateEvent>((ref) {
