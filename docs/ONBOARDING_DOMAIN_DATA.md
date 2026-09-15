@@ -227,6 +227,21 @@ Après **création / modification / suppression** d'un événement →
 Le caller d'une page plein-écran fait `context.push(...)` puis invalide ce qui
 a été modifié derrière ; la page plein-écran fermée rend `context.pop(true)`.
 
+### Règle d'or auth (le cœur du module)
+
+L'UI n'utilise `currentUser!` que si les 3 conditions suivantes sont TOUJOURS
+vraies **dans le bon ordre ET le bon timing** :
+1. **Restauration synchrone** : `AuthUserRepository.currentUser` pose l'état
+   avant le premier frame ;
+2. **Guard du routeur** : `AuthRefreshListenable` + redirect GoRouter (aucun
+   écran protégé ne s'affiche sans utilisateur) ;
+3. **Notification manuelle** : toute mutation de la session
+   (`signIn`/`signUp`/`signOut`) DOIT rappeler `authRefreshListenable.notify(...)`
+   sinon routeur et état divergent.
+
+Toute faille de ce triptyque est une faille d'ordre temporel (premier frame,
+flux asynchrone, redirect différé), pas une faille d'état.
+
 ---
 
 ## 6. Sécurité des billets — `core/security/ticket_signature_service.dart`
@@ -269,6 +284,31 @@ a été modifié derrière ; la page plein-écran fermée rend `context.pop(true
    identifiants en anglais. Doc en français.
 7. **Entités sans commentaires parasites** : les doc-comments expliquent le
    POURQUOI (décisions, écarts vs `classe.md`), pas le quoi.
+8. **Le flux d'auth peut mourir silencieusement (B1, à corriger)** :
+   `FirebaseAuthRepository.authStateChanges()` fait 1 lecture Firestore par
+   événement (`asyncMap`), et `AuthController.build()` écoute **sans `onError`**.
+   Une lecture KO (ex. boot hors-ligne sans cache Firestore) **termine le flux**
+   single-subscription → plus aucun événement (logout/révocation ignorés,
+   routeur figé « connecté »). Correctif retenu (audit du 15/09) : identité
+   Auth en `map` sync + `onError` au listener, profil Firestore chargé à part.
+9. **`currentUser!` n'est sûr QUE par le triptyque (cf. §5 Règle d'or auth)** :
+   si tu lis `currentUserProvider` hors d'un écran protégé, ou si la session
+   peut passer à null pendant un rebuild avant le redirect → le `!` crashe.
+   Garde null côté page (`if (user == null) return ...`) si tu doutes.
+10. **Invariant `authRefreshListenable` (B3)** : singleton global hors Riverpod,
+    partagé entre `AuthController` et le `GoRouter`. Routeur et état ne restent
+    cohérents QUE si chaque mutation d'auth notifie. En test, **obligatoire**
+    `setUp(() => resetAuthRouting())` — l'oublier rend les tests flaky.
+11. **`watchAuthStateProvider` est du code mort** : `AuthController.build()` lit
+    le repo en direct. Soit il est consommé dans `build()` (cohérence use
+    cases), soit il est supprimé.
+12. **Erreurs Storage/Firestore non mappées** : `mapAuthError` ne couvre que
+    `FirebaseAuthException` ; un échec d'upload d'avatar remonte en message
+    générique « Une erreur est survenue. » — décision à prendre : mapper ou
+    assumer.
+13. **`image_picker` sur desktop** : Windows est supporté (endorsed
+    `file_selector`) mais `maxWidth`/`maxHeight`/`imageQuality` sont **ignorés** →
+    avatars non compressés sur desktop.
 
 ---
 

@@ -81,7 +81,32 @@
 ## Backlog (hors périmètre de cette tâche)
 
 - **Phase 5 — Offline & SyncQueue (UC12-13, UC22-23)** : table `SyncQueue` (drift), outbox, drain via `connectivity_plus`, conflits.
-- **Phase 6 — Infra & qualité** : auth Firebase multi-utilisateurs, seeds réalistes par user, chiffrement du secret de signature hors code source.
+- **Phase 6 — Infra & qualité** : seeds réalistes par user (l'auth Firebase multi-utilisateurs est désormais FAIT — cf. « Sprint auth & identité »), chiffrement du secret de signature hors code source.
+
+---
+
+## Sprint auth & identité — FAIT (big-bang TEMPORAIRE)
+
+- **Objectif** : remplacer l'identité démo par une vraie authentification Firebase (login, register, profil, avatar) + garde du routeur.
+- **⚠️ Écart méthodo assumé** : livré en **big-bang** (login + register + profil + routeur + `main` d'un coup) et validé d'un bloc, au lieu de l'écran-par-écran. Justifié par le fait que le garde du routeur est transversal (aucun écran testable en isolation). **C'est une exception TEMPORAIRE** : retour strict au cycle écran-par-écran (analyse → plan validé → évaluation d'impact → exécution → tests → commit) dès la prochaine étape.
+- **Périmètre livré** : module `features/auth` complet (domaine/data/présentation) branché Firebase réel (Auth + Firestore `users/{uid}` + Storage avatar) ; `User.id` = uid ; `currentUserProvider` source unique ; pages `/login` et `/register` (routes racine) ; `ProfilePage` réelle (signOut, avatar cliquable) ; `AuthRefreshListenable` (guard/redirect + retour sur la destination visée) ; `main.dart` (init Firebase try/catch + support de Garde) ; docs synchronisées.
+- **Critères d'acceptation** : `flutter analyze` 0 issue ; `flutter test` 78/78 verts — **atteints le 15/09**.
+- **Validation** : en attente de l'équipe avant commit (RD4).
+
+## Audit rétro-inspection — module auth (15/09/2026) — RD2
+
+Bilan post-landing (détail et règles à connaître : `docs/ONBOARDING_DOMAIN_DATA.md` §Pièges).
+
+| ID | Sévérité | Constat | Correctif retenu |
+|---|---|---|---|
+| B1 | 🔴 | `authStateChanges()` fait **1 lecture Firestore par événement** (`asyncMap`) et le listener d'`AuthController` n'a pas d'`onError` ; une lecture KO (ex. boot hors-ligne) **termine le flux** (single-subscription) → logout/révocation ignorés, routeur figé « connecté » | Option A : identité en `map` sync (pas d'`asyncMap`), profil enrichi chargé à part ; `onError` au listener |
+| B2 | 🟠 | `ref.watch(currentUserProvider)!` (8 pages) : une déconnexion asynchrone peut rebuilder avant le redirect → `!` sur null | Garde null par page OU assertion unique dans le provider |
+| B3 | 🟠 | `authRefreshListenable` = singleton global hors Riverpod ; invariant manuel « toute mutation d'état DOIT notifier » ; oubli de `resetAuthRouting()` = tests flaky | Invariant documenté (fait) ; rattacher l'état de routage à l'état auth si possible |
+| B4 | 🟡 | `watchAuthStateProvider` inutilisé ; erreurs Storage/Firestore non mappées ; `image_picker` desktop ignore maxWidth/quality | Consommer ou supprimer le provider ; mapper Storage ; note desktop |
+
+**Invariant central du module** : l'UI n'utilise `currentUser!` que parce que (1) restauration synchrone `currentUser`, (2) guard du routeur, (3) notification du listenable à chaque mutation — sont TOUJOURS vrais, dans le bon ordre **et le bon timing**. Tous les bugs vus sont des failles d'ordre temporel (flux/erreur asynchrone vs premier frame du routeur).
+
+**Non fait, à planifier** : tests widget du Profil (signOut, avatar), test du chemin d'erreur du flux, email vérification / password reset, règles Firebase Firestore (`/users/{uid}`) + Storage à écrire, nettoyage des anciens avatars Storage, résolution de la divergence `classe.md` (password/authId) vs entité vs schéma drift.
 
 ---
 
@@ -94,3 +119,4 @@
 | 2 — EventDetailScreen | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 31/31 verts |
 | 3 — Gestion & contrôle | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 40/40 verts |
 | 4 — Top bar + safe area | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 42/42 verts |
+| Sprint auth & identité | **Fait (big-bang temporaire)** | 15/09 — `flutter analyze` 0 issue + `flutter test` 78/78 verts — correctifs d'audit B1-B4 à planifier |
