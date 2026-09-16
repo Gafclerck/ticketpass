@@ -3,317 +3,6 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $UsersTable extends Users with TableInfo<$UsersTable, User> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $UsersTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _emailMeta = const VerificationMeta('email');
-  @override
-  late final GeneratedColumn<String> email = GeneratedColumn<String>(
-    'email',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
-  );
-  static const VerificationMeta _fullNameMeta = const VerificationMeta(
-    'fullName',
-  );
-  @override
-  late final GeneratedColumn<String> fullName = GeneratedColumn<String>(
-    'full_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _profileUrlMeta = const VerificationMeta(
-    'profileUrl',
-  );
-  @override
-  late final GeneratedColumn<String> profileUrl = GeneratedColumn<String>(
-    'profile_url',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [id, email, fullName, profileUrl];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'users';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<User> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('email')) {
-      context.handle(
-        _emailMeta,
-        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_emailMeta);
-    }
-    if (data.containsKey('full_name')) {
-      context.handle(
-        _fullNameMeta,
-        fullName.isAcceptableOrUnknown(data['full_name']!, _fullNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_fullNameMeta);
-    }
-    if (data.containsKey('profile_url')) {
-      context.handle(
-        _profileUrlMeta,
-        profileUrl.isAcceptableOrUnknown(data['profile_url']!, _profileUrlMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  User map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return User(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      email: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}email'],
-      )!,
-      fullName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}full_name'],
-      )!,
-      profileUrl: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}profile_url'],
-      ),
-    );
-  }
-
-  @override
-  $UsersTable createAlias(String alias) {
-    return $UsersTable(attachedDatabase, alias);
-  }
-}
-
-class User extends DataClass implements Insertable<User> {
-  final String id;
-  final String email;
-  final String fullName;
-  final String? profileUrl;
-  const User({
-    required this.id,
-    required this.email,
-    required this.fullName,
-    this.profileUrl,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['email'] = Variable<String>(email);
-    map['full_name'] = Variable<String>(fullName);
-    if (!nullToAbsent || profileUrl != null) {
-      map['profile_url'] = Variable<String>(profileUrl);
-    }
-    return map;
-  }
-
-  UsersCompanion toCompanion(bool nullToAbsent) {
-    return UsersCompanion(
-      id: Value(id),
-      email: Value(email),
-      fullName: Value(fullName),
-      profileUrl: profileUrl == null && nullToAbsent
-          ? const Value.absent()
-          : Value(profileUrl),
-    );
-  }
-
-  factory User.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return User(
-      id: serializer.fromJson<String>(json['id']),
-      email: serializer.fromJson<String>(json['email']),
-      fullName: serializer.fromJson<String>(json['fullName']),
-      profileUrl: serializer.fromJson<String?>(json['profileUrl']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'email': serializer.toJson<String>(email),
-      'fullName': serializer.toJson<String>(fullName),
-      'profileUrl': serializer.toJson<String?>(profileUrl),
-    };
-  }
-
-  User copyWith({
-    String? id,
-    String? email,
-    String? fullName,
-    Value<String?> profileUrl = const Value.absent(),
-  }) => User(
-    id: id ?? this.id,
-    email: email ?? this.email,
-    fullName: fullName ?? this.fullName,
-    profileUrl: profileUrl.present ? profileUrl.value : this.profileUrl,
-  );
-  User copyWithCompanion(UsersCompanion data) {
-    return User(
-      id: data.id.present ? data.id.value : this.id,
-      email: data.email.present ? data.email.value : this.email,
-      fullName: data.fullName.present ? data.fullName.value : this.fullName,
-      profileUrl: data.profileUrl.present
-          ? data.profileUrl.value
-          : this.profileUrl,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('User(')
-          ..write('id: $id, ')
-          ..write('email: $email, ')
-          ..write('fullName: $fullName, ')
-          ..write('profileUrl: $profileUrl')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, email, fullName, profileUrl);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is User &&
-          other.id == this.id &&
-          other.email == this.email &&
-          other.fullName == this.fullName &&
-          other.profileUrl == this.profileUrl);
-}
-
-class UsersCompanion extends UpdateCompanion<User> {
-  final Value<String> id;
-  final Value<String> email;
-  final Value<String> fullName;
-  final Value<String?> profileUrl;
-  final Value<int> rowid;
-  const UsersCompanion({
-    this.id = const Value.absent(),
-    this.email = const Value.absent(),
-    this.fullName = const Value.absent(),
-    this.profileUrl = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  UsersCompanion.insert({
-    required String id,
-    required String email,
-    required String fullName,
-    this.profileUrl = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       email = Value(email),
-       fullName = Value(fullName);
-  static Insertable<User> custom({
-    Expression<String>? id,
-    Expression<String>? email,
-    Expression<String>? fullName,
-    Expression<String>? profileUrl,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (email != null) 'email': email,
-      if (fullName != null) 'full_name': fullName,
-      if (profileUrl != null) 'profile_url': profileUrl,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  UsersCompanion copyWith({
-    Value<String>? id,
-    Value<String>? email,
-    Value<String>? fullName,
-    Value<String?>? profileUrl,
-    Value<int>? rowid,
-  }) {
-    return UsersCompanion(
-      id: id ?? this.id,
-      email: email ?? this.email,
-      fullName: fullName ?? this.fullName,
-      profileUrl: profileUrl ?? this.profileUrl,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (email.present) {
-      map['email'] = Variable<String>(email.value);
-    }
-    if (fullName.present) {
-      map['full_name'] = Variable<String>(fullName.value);
-    }
-    if (profileUrl.present) {
-      map['profile_url'] = Variable<String>(profileUrl.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('UsersCompanion(')
-          ..write('id: $id, ')
-          ..write('email: $email, ')
-          ..write('fullName: $fullName, ')
-          ..write('profileUrl: $profileUrl, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -445,6 +134,18 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<EventStatus>($EventsTable.$converterstatus);
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -459,6 +160,7 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     eventPlace,
     maxPlaces,
     status,
+    updatedAtMs,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -554,6 +256,15 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     } else if (isInserting) {
       context.missing(_maxPlacesMeta);
     }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -615,6 +326,10 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
           data['${effectivePrefix}status'],
         )!,
       ),
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
     );
   }
 
@@ -642,6 +357,7 @@ class Event extends DataClass implements Insertable<Event> {
   final String eventPlace;
   final int maxPlaces;
   final EventStatus status;
+  final int updatedAtMs;
   const Event({
     required this.id,
     required this.title,
@@ -655,6 +371,7 @@ class Event extends DataClass implements Insertable<Event> {
     required this.eventPlace,
     required this.maxPlaces,
     required this.status,
+    required this.updatedAtMs,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -677,6 +394,7 @@ class Event extends DataClass implements Insertable<Event> {
         $EventsTable.$converterstatus.toSql(status),
       );
     }
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
     return map;
   }
 
@@ -694,6 +412,7 @@ class Event extends DataClass implements Insertable<Event> {
       eventPlace: Value(eventPlace),
       maxPlaces: Value(maxPlaces),
       status: Value(status),
+      updatedAtMs: Value(updatedAtMs),
     );
   }
 
@@ -719,6 +438,7 @@ class Event extends DataClass implements Insertable<Event> {
       status: $EventsTable.$converterstatus.fromJson(
         serializer.fromJson<String>(json['status']),
       ),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
     );
   }
   @override
@@ -741,6 +461,7 @@ class Event extends DataClass implements Insertable<Event> {
       'status': serializer.toJson<String>(
         $EventsTable.$converterstatus.toJson(status),
       ),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
     };
   }
 
@@ -757,6 +478,7 @@ class Event extends DataClass implements Insertable<Event> {
     String? eventPlace,
     int? maxPlaces,
     EventStatus? status,
+    int? updatedAtMs,
   }) => Event(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -770,6 +492,7 @@ class Event extends DataClass implements Insertable<Event> {
     eventPlace: eventPlace ?? this.eventPlace,
     maxPlaces: maxPlaces ?? this.maxPlaces,
     status: status ?? this.status,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
   );
   Event copyWithCompanion(EventsCompanion data) {
     return Event(
@@ -793,6 +516,9 @@ class Event extends DataClass implements Insertable<Event> {
           : this.eventPlace,
       maxPlaces: data.maxPlaces.present ? data.maxPlaces.value : this.maxPlaces,
       status: data.status.present ? data.status.value : this.status,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
     );
   }
 
@@ -810,7 +536,8 @@ class Event extends DataClass implements Insertable<Event> {
           ..write('brandName: $brandName, ')
           ..write('eventPlace: $eventPlace, ')
           ..write('maxPlaces: $maxPlaces, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('updatedAtMs: $updatedAtMs')
           ..write(')'))
         .toString();
   }
@@ -829,6 +556,7 @@ class Event extends DataClass implements Insertable<Event> {
     eventPlace,
     maxPlaces,
     status,
+    updatedAtMs,
   );
   @override
   bool operator ==(Object other) =>
@@ -845,7 +573,8 @@ class Event extends DataClass implements Insertable<Event> {
           other.brandName == this.brandName &&
           other.eventPlace == this.eventPlace &&
           other.maxPlaces == this.maxPlaces &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.updatedAtMs == this.updatedAtMs);
 }
 
 class EventsCompanion extends UpdateCompanion<Event> {
@@ -861,6 +590,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
   final Value<String> eventPlace;
   final Value<int> maxPlaces;
   final Value<EventStatus> status;
+  final Value<int> updatedAtMs;
   final Value<int> rowid;
   const EventsCompanion({
     this.id = const Value.absent(),
@@ -875,6 +605,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     this.eventPlace = const Value.absent(),
     this.maxPlaces = const Value.absent(),
     this.status = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   EventsCompanion.insert({
@@ -890,6 +621,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     required String eventPlace,
     required int maxPlaces,
     required EventStatus status,
+    this.updatedAtMs = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title),
@@ -914,6 +646,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Expression<String>? eventPlace,
     Expression<int>? maxPlaces,
     Expression<String>? status,
+    Expression<int>? updatedAtMs,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -929,6 +662,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
       if (eventPlace != null) 'event_place': eventPlace,
       if (maxPlaces != null) 'max_places': maxPlaces,
       if (status != null) 'status': status,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -946,6 +680,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Value<String>? eventPlace,
     Value<int>? maxPlaces,
     Value<EventStatus>? status,
+    Value<int>? updatedAtMs,
     Value<int>? rowid,
   }) {
     return EventsCompanion(
@@ -961,6 +696,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
       eventPlace: eventPlace ?? this.eventPlace,
       maxPlaces: maxPlaces ?? this.maxPlaces,
       status: status ?? this.status,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1008,6 +744,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
         $EventsTable.$converterstatus.toSql(status.value),
       );
     }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1029,6 +768,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
           ..write('eventPlace: $eventPlace, ')
           ..write('maxPlaces: $maxPlaces, ')
           ..write('status: $status, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1089,9 +829,6 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES users (id)',
-    ),
   );
   static const VerificationMeta _eventIdMeta = const VerificationMeta(
     'eventId',
@@ -1107,6 +844,18 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
       'REFERENCES events (id)',
     ),
   );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1115,6 +864,7 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     qrSignature,
     userId,
     eventId,
+    updatedAtMs,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1168,6 +918,15 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     } else if (isInserting) {
       context.missing(_eventIdMeta);
     }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1203,6 +962,10 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.string,
         data['${effectivePrefix}event_id'],
       )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
     );
   }
 
@@ -1222,6 +985,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   final String qrSignature;
   final String userId;
   final String eventId;
+  final int updatedAtMs;
   const Ticket({
     required this.id,
     required this.status,
@@ -1229,6 +993,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     required this.qrSignature,
     required this.userId,
     required this.eventId,
+    required this.updatedAtMs,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1243,6 +1008,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     map['qr_signature'] = Variable<String>(qrSignature);
     map['user_id'] = Variable<String>(userId);
     map['event_id'] = Variable<String>(eventId);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
     return map;
   }
 
@@ -1254,6 +1020,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       qrSignature: Value(qrSignature),
       userId: Value(userId),
       eventId: Value(eventId),
+      updatedAtMs: Value(updatedAtMs),
     );
   }
 
@@ -1271,6 +1038,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       qrSignature: serializer.fromJson<String>(json['qrSignature']),
       userId: serializer.fromJson<String>(json['userId']),
       eventId: serializer.fromJson<String>(json['eventId']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
     );
   }
   @override
@@ -1285,6 +1053,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'qrSignature': serializer.toJson<String>(qrSignature),
       'userId': serializer.toJson<String>(userId),
       'eventId': serializer.toJson<String>(eventId),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
     };
   }
 
@@ -1295,6 +1064,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     String? qrSignature,
     String? userId,
     String? eventId,
+    int? updatedAtMs,
   }) => Ticket(
     id: id ?? this.id,
     status: status ?? this.status,
@@ -1302,6 +1072,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     qrSignature: qrSignature ?? this.qrSignature,
     userId: userId ?? this.userId,
     eventId: eventId ?? this.eventId,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
   );
   Ticket copyWithCompanion(TicketsCompanion data) {
     return Ticket(
@@ -1315,6 +1086,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           : this.qrSignature,
       userId: data.userId.present ? data.userId.value : this.userId,
       eventId: data.eventId.present ? data.eventId.value : this.eventId,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
     );
   }
 
@@ -1326,14 +1100,22 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('uniqueCode: $uniqueCode, ')
           ..write('qrSignature: $qrSignature, ')
           ..write('userId: $userId, ')
-          ..write('eventId: $eventId')
+          ..write('eventId: $eventId, ')
+          ..write('updatedAtMs: $updatedAtMs')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, status, uniqueCode, qrSignature, userId, eventId);
+  int get hashCode => Object.hash(
+    id,
+    status,
+    uniqueCode,
+    qrSignature,
+    userId,
+    eventId,
+    updatedAtMs,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1343,7 +1125,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.uniqueCode == this.uniqueCode &&
           other.qrSignature == this.qrSignature &&
           other.userId == this.userId &&
-          other.eventId == this.eventId);
+          other.eventId == this.eventId &&
+          other.updatedAtMs == this.updatedAtMs);
 }
 
 class TicketsCompanion extends UpdateCompanion<Ticket> {
@@ -1353,6 +1136,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<String> qrSignature;
   final Value<String> userId;
   final Value<String> eventId;
+  final Value<int> updatedAtMs;
   final Value<int> rowid;
   const TicketsCompanion({
     this.id = const Value.absent(),
@@ -1361,6 +1145,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.qrSignature = const Value.absent(),
     this.userId = const Value.absent(),
     this.eventId = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TicketsCompanion.insert({
@@ -1370,6 +1155,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     required String qrSignature,
     required String userId,
     required String eventId,
+    this.updatedAtMs = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        status = Value(status),
@@ -1384,6 +1170,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<String>? qrSignature,
     Expression<String>? userId,
     Expression<String>? eventId,
+    Expression<int>? updatedAtMs,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1393,6 +1180,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (qrSignature != null) 'qr_signature': qrSignature,
       if (userId != null) 'user_id': userId,
       if (eventId != null) 'event_id': eventId,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1404,6 +1192,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<String>? qrSignature,
     Value<String>? userId,
     Value<String>? eventId,
+    Value<int>? updatedAtMs,
     Value<int>? rowid,
   }) {
     return TicketsCompanion(
@@ -1413,6 +1202,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       qrSignature: qrSignature ?? this.qrSignature,
       userId: userId ?? this.userId,
       eventId: eventId ?? this.eventId,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1440,6 +1230,9 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     if (eventId.present) {
       map['event_id'] = Variable<String>(eventId.value);
     }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1455,6 +1248,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('qrSignature: $qrSignature, ')
           ..write('userId: $userId, ')
           ..write('eventId: $eventId, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1475,9 +1269,6 @@ class $EventUserRolesTable extends EventUserRoles
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES users (id)',
-    ),
   );
   static const VerificationMeta _eventIdMeta = const VerificationMeta(
     'eventId',
@@ -1502,8 +1293,20 @@ class $EventUserRolesTable extends EventUserRoles
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<Role>($EventUserRolesTable.$converterrole);
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
   @override
-  List<GeneratedColumn> get $columns => [userId, eventId, role];
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [userId, eventId, role, updatedAtMs];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1532,6 +1335,15 @@ class $EventUserRolesTable extends EventUserRoles
     } else if (isInserting) {
       context.missing(_eventIdMeta);
     }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1555,6 +1367,10 @@ class $EventUserRolesTable extends EventUserRoles
           data['${effectivePrefix}role'],
         )!,
       ),
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
     );
   }
 
@@ -1571,10 +1387,12 @@ class EventUserRole extends DataClass implements Insertable<EventUserRole> {
   final String userId;
   final String eventId;
   final Role role;
+  final int updatedAtMs;
   const EventUserRole({
     required this.userId,
     required this.eventId,
     required this.role,
+    required this.updatedAtMs,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1586,6 +1404,7 @@ class EventUserRole extends DataClass implements Insertable<EventUserRole> {
         $EventUserRolesTable.$converterrole.toSql(role),
       );
     }
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
     return map;
   }
 
@@ -1594,6 +1413,7 @@ class EventUserRole extends DataClass implements Insertable<EventUserRole> {
       userId: Value(userId),
       eventId: Value(eventId),
       role: Value(role),
+      updatedAtMs: Value(updatedAtMs),
     );
   }
 
@@ -1608,6 +1428,7 @@ class EventUserRole extends DataClass implements Insertable<EventUserRole> {
       role: $EventUserRolesTable.$converterrole.fromJson(
         serializer.fromJson<String>(json['role']),
       ),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
     );
   }
   @override
@@ -1619,20 +1440,29 @@ class EventUserRole extends DataClass implements Insertable<EventUserRole> {
       'role': serializer.toJson<String>(
         $EventUserRolesTable.$converterrole.toJson(role),
       ),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
     };
   }
 
-  EventUserRole copyWith({String? userId, String? eventId, Role? role}) =>
-      EventUserRole(
-        userId: userId ?? this.userId,
-        eventId: eventId ?? this.eventId,
-        role: role ?? this.role,
-      );
+  EventUserRole copyWith({
+    String? userId,
+    String? eventId,
+    Role? role,
+    int? updatedAtMs,
+  }) => EventUserRole(
+    userId: userId ?? this.userId,
+    eventId: eventId ?? this.eventId,
+    role: role ?? this.role,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
   EventUserRole copyWithCompanion(EventUserRolesCompanion data) {
     return EventUserRole(
       userId: data.userId.present ? data.userId.value : this.userId,
       eventId: data.eventId.present ? data.eventId.value : this.eventId,
       role: data.role.present ? data.role.value : this.role,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
     );
   }
 
@@ -1641,37 +1471,42 @@ class EventUserRole extends DataClass implements Insertable<EventUserRole> {
     return (StringBuffer('EventUserRole(')
           ..write('userId: $userId, ')
           ..write('eventId: $eventId, ')
-          ..write('role: $role')
+          ..write('role: $role, ')
+          ..write('updatedAtMs: $updatedAtMs')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(userId, eventId, role);
+  int get hashCode => Object.hash(userId, eventId, role, updatedAtMs);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is EventUserRole &&
           other.userId == this.userId &&
           other.eventId == this.eventId &&
-          other.role == this.role);
+          other.role == this.role &&
+          other.updatedAtMs == this.updatedAtMs);
 }
 
 class EventUserRolesCompanion extends UpdateCompanion<EventUserRole> {
   final Value<String> userId;
   final Value<String> eventId;
   final Value<Role> role;
+  final Value<int> updatedAtMs;
   final Value<int> rowid;
   const EventUserRolesCompanion({
     this.userId = const Value.absent(),
     this.eventId = const Value.absent(),
     this.role = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   EventUserRolesCompanion.insert({
     required String userId,
     required String eventId,
     required Role role,
+    this.updatedAtMs = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId),
        eventId = Value(eventId),
@@ -1680,12 +1515,14 @@ class EventUserRolesCompanion extends UpdateCompanion<EventUserRole> {
     Expression<String>? userId,
     Expression<String>? eventId,
     Expression<String>? role,
+    Expression<int>? updatedAtMs,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (userId != null) 'user_id': userId,
       if (eventId != null) 'event_id': eventId,
       if (role != null) 'role': role,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1694,12 +1531,14 @@ class EventUserRolesCompanion extends UpdateCompanion<EventUserRole> {
     Value<String>? userId,
     Value<String>? eventId,
     Value<Role>? role,
+    Value<int>? updatedAtMs,
     Value<int>? rowid,
   }) {
     return EventUserRolesCompanion(
       userId: userId ?? this.userId,
       eventId: eventId ?? this.eventId,
       role: role ?? this.role,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1718,6 +1557,9 @@ class EventUserRolesCompanion extends UpdateCompanion<EventUserRole> {
         $EventUserRolesTable.$converterrole.toSql(role.value),
       );
     }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1730,6 +1572,627 @@ class EventUserRolesCompanion extends UpdateCompanion<EventUserRole> {
           ..write('userId: $userId, ')
           ..write('eventId: $eventId, ')
           ..write('role: $role, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncOutboxTable extends SyncOutbox
+    with TableInfo<$SyncOutboxTable, SyncOutboxData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncOutboxTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _opMeta = const VerificationMeta('op');
+  @override
+  late final GeneratedColumn<String> op = GeneratedColumn<String>(
+    'op',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _preconditionMeta = const VerificationMeta(
+    'precondition',
+  );
+  @override
+  late final GeneratedColumn<String> precondition = GeneratedColumn<String>(
+    'precondition',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMsMeta = const VerificationMeta(
+    'createdAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> createdAtMs = GeneratedColumn<int>(
+    'created_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta(
+    'attempts',
+  );
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextRetryAtMsMeta = const VerificationMeta(
+    'nextRetryAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> nextRetryAtMs = GeneratedColumn<int>(
+    'next_retry_at_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    entityType,
+    entityId,
+    op,
+    precondition,
+    payload,
+    status,
+    createdAtMs,
+    attempts,
+    nextRetryAtMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_outbox';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncOutboxData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('op')) {
+      context.handle(_opMeta, op.isAcceptableOrUnknown(data['op']!, _opMeta));
+    } else if (isInserting) {
+      context.missing(_opMeta);
+    }
+    if (data.containsKey('precondition')) {
+      context.handle(
+        _preconditionMeta,
+        precondition.isAcceptableOrUnknown(
+          data['precondition']!,
+          _preconditionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('created_at_ms')) {
+      context.handle(
+        _createdAtMsMeta,
+        createdAtMs.isAcceptableOrUnknown(
+          data['created_at_ms']!,
+          _createdAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMsMeta);
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    if (data.containsKey('next_retry_at_ms')) {
+      context.handle(
+        _nextRetryAtMsMeta,
+        nextRetryAtMs.isAcceptableOrUnknown(
+          data['next_retry_at_ms']!,
+          _nextRetryAtMsMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncOutboxData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncOutboxData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      op: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op'],
+      )!,
+      precondition: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}precondition'],
+      ),
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_ms'],
+      )!,
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+      nextRetryAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}next_retry_at_ms'],
+      ),
+    );
+  }
+
+  @override
+  $SyncOutboxTable createAlias(String alias) {
+    return $SyncOutboxTable(attachedDatabase, alias);
+  }
+}
+
+class SyncOutboxData extends DataClass implements Insertable<SyncOutboxData> {
+  final String id;
+  final String entityType;
+  final String entityId;
+  final String op;
+  final String? precondition;
+  final String payload;
+  final String status;
+  final int createdAtMs;
+  final int attempts;
+  final int? nextRetryAtMs;
+  const SyncOutboxData({
+    required this.id,
+    required this.entityType,
+    required this.entityId,
+    required this.op,
+    this.precondition,
+    required this.payload,
+    required this.status,
+    required this.createdAtMs,
+    required this.attempts,
+    this.nextRetryAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    map['op'] = Variable<String>(op);
+    if (!nullToAbsent || precondition != null) {
+      map['precondition'] = Variable<String>(precondition);
+    }
+    map['payload'] = Variable<String>(payload);
+    map['status'] = Variable<String>(status);
+    map['created_at_ms'] = Variable<int>(createdAtMs);
+    map['attempts'] = Variable<int>(attempts);
+    if (!nullToAbsent || nextRetryAtMs != null) {
+      map['next_retry_at_ms'] = Variable<int>(nextRetryAtMs);
+    }
+    return map;
+  }
+
+  SyncOutboxCompanion toCompanion(bool nullToAbsent) {
+    return SyncOutboxCompanion(
+      id: Value(id),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      op: Value(op),
+      precondition: precondition == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precondition),
+      payload: Value(payload),
+      status: Value(status),
+      createdAtMs: Value(createdAtMs),
+      attempts: Value(attempts),
+      nextRetryAtMs: nextRetryAtMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextRetryAtMs),
+    );
+  }
+
+  factory SyncOutboxData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncOutboxData(
+      id: serializer.fromJson<String>(json['id']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      op: serializer.fromJson<String>(json['op']),
+      precondition: serializer.fromJson<String?>(json['precondition']),
+      payload: serializer.fromJson<String>(json['payload']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAtMs: serializer.fromJson<int>(json['createdAtMs']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+      nextRetryAtMs: serializer.fromJson<int?>(json['nextRetryAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'op': serializer.toJson<String>(op),
+      'precondition': serializer.toJson<String?>(precondition),
+      'payload': serializer.toJson<String>(payload),
+      'status': serializer.toJson<String>(status),
+      'createdAtMs': serializer.toJson<int>(createdAtMs),
+      'attempts': serializer.toJson<int>(attempts),
+      'nextRetryAtMs': serializer.toJson<int?>(nextRetryAtMs),
+    };
+  }
+
+  SyncOutboxData copyWith({
+    String? id,
+    String? entityType,
+    String? entityId,
+    String? op,
+    Value<String?> precondition = const Value.absent(),
+    String? payload,
+    String? status,
+    int? createdAtMs,
+    int? attempts,
+    Value<int?> nextRetryAtMs = const Value.absent(),
+  }) => SyncOutboxData(
+    id: id ?? this.id,
+    entityType: entityType ?? this.entityType,
+    entityId: entityId ?? this.entityId,
+    op: op ?? this.op,
+    precondition: precondition.present ? precondition.value : this.precondition,
+    payload: payload ?? this.payload,
+    status: status ?? this.status,
+    createdAtMs: createdAtMs ?? this.createdAtMs,
+    attempts: attempts ?? this.attempts,
+    nextRetryAtMs: nextRetryAtMs.present
+        ? nextRetryAtMs.value
+        : this.nextRetryAtMs,
+  );
+  SyncOutboxData copyWithCompanion(SyncOutboxCompanion data) {
+    return SyncOutboxData(
+      id: data.id.present ? data.id.value : this.id,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      op: data.op.present ? data.op.value : this.op,
+      precondition: data.precondition.present
+          ? data.precondition.value
+          : this.precondition,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      status: data.status.present ? data.status.value : this.status,
+      createdAtMs: data.createdAtMs.present
+          ? data.createdAtMs.value
+          : this.createdAtMs,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      nextRetryAtMs: data.nextRetryAtMs.present
+          ? data.nextRetryAtMs.value
+          : this.nextRetryAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxData(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('op: $op, ')
+          ..write('precondition: $precondition, ')
+          ..write('payload: $payload, ')
+          ..write('status: $status, ')
+          ..write('createdAtMs: $createdAtMs, ')
+          ..write('attempts: $attempts, ')
+          ..write('nextRetryAtMs: $nextRetryAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    entityType,
+    entityId,
+    op,
+    precondition,
+    payload,
+    status,
+    createdAtMs,
+    attempts,
+    nextRetryAtMs,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncOutboxData &&
+          other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.op == this.op &&
+          other.precondition == this.precondition &&
+          other.payload == this.payload &&
+          other.status == this.status &&
+          other.createdAtMs == this.createdAtMs &&
+          other.attempts == this.attempts &&
+          other.nextRetryAtMs == this.nextRetryAtMs);
+}
+
+class SyncOutboxCompanion extends UpdateCompanion<SyncOutboxData> {
+  final Value<String> id;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<String> op;
+  final Value<String?> precondition;
+  final Value<String> payload;
+  final Value<String> status;
+  final Value<int> createdAtMs;
+  final Value<int> attempts;
+  final Value<int?> nextRetryAtMs;
+  final Value<int> rowid;
+  const SyncOutboxCompanion({
+    this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.op = const Value.absent(),
+    this.precondition = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAtMs = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.nextRetryAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncOutboxCompanion.insert({
+    required String id,
+    required String entityType,
+    required String entityId,
+    required String op,
+    this.precondition = const Value.absent(),
+    required String payload,
+    required String status,
+    required int createdAtMs,
+    this.attempts = const Value.absent(),
+    this.nextRetryAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       entityType = Value(entityType),
+       entityId = Value(entityId),
+       op = Value(op),
+       payload = Value(payload),
+       status = Value(status),
+       createdAtMs = Value(createdAtMs);
+  static Insertable<SyncOutboxData> custom({
+    Expression<String>? id,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<String>? op,
+    Expression<String>? precondition,
+    Expression<String>? payload,
+    Expression<String>? status,
+    Expression<int>? createdAtMs,
+    Expression<int>? attempts,
+    Expression<int>? nextRetryAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (op != null) 'op': op,
+      if (precondition != null) 'precondition': precondition,
+      if (payload != null) 'payload': payload,
+      if (status != null) 'status': status,
+      if (createdAtMs != null) 'created_at_ms': createdAtMs,
+      if (attempts != null) 'attempts': attempts,
+      if (nextRetryAtMs != null) 'next_retry_at_ms': nextRetryAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncOutboxCompanion copyWith({
+    Value<String>? id,
+    Value<String>? entityType,
+    Value<String>? entityId,
+    Value<String>? op,
+    Value<String?>? precondition,
+    Value<String>? payload,
+    Value<String>? status,
+    Value<int>? createdAtMs,
+    Value<int>? attempts,
+    Value<int?>? nextRetryAtMs,
+    Value<int>? rowid,
+  }) {
+    return SyncOutboxCompanion(
+      id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      op: op ?? this.op,
+      precondition: precondition ?? this.precondition,
+      payload: payload ?? this.payload,
+      status: status ?? this.status,
+      createdAtMs: createdAtMs ?? this.createdAtMs,
+      attempts: attempts ?? this.attempts,
+      nextRetryAtMs: nextRetryAtMs ?? this.nextRetryAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (op.present) {
+      map['op'] = Variable<String>(op.value);
+    }
+    if (precondition.present) {
+      map['precondition'] = Variable<String>(precondition.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAtMs.present) {
+      map['created_at_ms'] = Variable<int>(createdAtMs.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (nextRetryAtMs.present) {
+      map['next_retry_at_ms'] = Variable<int>(nextRetryAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxCompanion(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('op: $op, ')
+          ..write('precondition: $precondition, ')
+          ..write('payload: $payload, ')
+          ..write('status: $status, ')
+          ..write('createdAtMs: $createdAtMs, ')
+          ..write('attempts: $attempts, ')
+          ..write('nextRetryAtMs: $nextRetryAtMs, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1739,393 +2202,22 @@ class EventUserRolesCompanion extends UpdateCompanion<EventUserRole> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $UsersTable users = $UsersTable(this);
   late final $EventsTable events = $EventsTable(this);
   late final $TicketsTable tickets = $TicketsTable(this);
   late final $EventUserRolesTable eventUserRoles = $EventUserRolesTable(this);
+  late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    users,
     events,
     tickets,
     eventUserRoles,
+    syncOutbox,
   ];
 }
 
-typedef $$UsersTableCreateCompanionBuilder =
-    UsersCompanion Function({
-      required String id,
-      required String email,
-      required String fullName,
-      Value<String?> profileUrl,
-      Value<int> rowid,
-    });
-typedef $$UsersTableUpdateCompanionBuilder =
-    UsersCompanion Function({
-      Value<String> id,
-      Value<String> email,
-      Value<String> fullName,
-      Value<String?> profileUrl,
-      Value<int> rowid,
-    });
-
-final class $$UsersTableReferences
-    extends BaseReferences<_$AppDatabase, $UsersTable, User> {
-  $$UsersTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$TicketsTable, List<Ticket>> _ticketsRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.tickets,
-    aliasName: 'users__id__tickets__user_id',
-  );
-
-  $$TicketsTableProcessedTableManager get ticketsRefs {
-    final manager = $$TicketsTableTableManager(
-      $_db,
-      $_db.tickets,
-    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_ticketsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$EventUserRolesTable, List<EventUserRole>>
-  _eventUserRolesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.eventUserRoles,
-    aliasName: 'users__id__event_user_roles__user_id',
-  );
-
-  $$EventUserRolesTableProcessedTableManager get eventUserRolesRefs {
-    final manager = $$EventUserRolesTableTableManager(
-      $_db,
-      $_db.eventUserRoles,
-    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_eventUserRolesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
-  $$UsersTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get email => $composableBuilder(
-    column: $table.email,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get fullName => $composableBuilder(
-    column: $table.fullName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get profileUrl => $composableBuilder(
-    column: $table.profileUrl,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  Expression<bool> ticketsRefs(
-    Expression<bool> Function($$TicketsTableFilterComposer f) f,
-  ) {
-    final $$TicketsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.tickets,
-      getReferencedColumn: (t) => t.userId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TicketsTableFilterComposer(
-            $db: $db,
-            $table: $db.tickets,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> eventUserRolesRefs(
-    Expression<bool> Function($$EventUserRolesTableFilterComposer f) f,
-  ) {
-    final $$EventUserRolesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.eventUserRoles,
-      getReferencedColumn: (t) => t.userId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EventUserRolesTableFilterComposer(
-            $db: $db,
-            $table: $db.eventUserRoles,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$UsersTableOrderingComposer
-    extends Composer<_$AppDatabase, $UsersTable> {
-  $$UsersTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get email => $composableBuilder(
-    column: $table.email,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get fullName => $composableBuilder(
-    column: $table.fullName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get profileUrl => $composableBuilder(
-    column: $table.profileUrl,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$UsersTableAnnotationComposer
-    extends Composer<_$AppDatabase, $UsersTable> {
-  $$UsersTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get email =>
-      $composableBuilder(column: $table.email, builder: (column) => column);
-
-  GeneratedColumn<String> get fullName =>
-      $composableBuilder(column: $table.fullName, builder: (column) => column);
-
-  GeneratedColumn<String> get profileUrl => $composableBuilder(
-    column: $table.profileUrl,
-    builder: (column) => column,
-  );
-
-  Expression<T> ticketsRefs<T extends Object>(
-    Expression<T> Function($$TicketsTableAnnotationComposer a) f,
-  ) {
-    final $$TicketsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.tickets,
-      getReferencedColumn: (t) => t.userId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TicketsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.tickets,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> eventUserRolesRefs<T extends Object>(
-    Expression<T> Function($$EventUserRolesTableAnnotationComposer a) f,
-  ) {
-    final $$EventUserRolesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.eventUserRoles,
-      getReferencedColumn: (t) => t.userId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EventUserRolesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.eventUserRoles,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$UsersTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $UsersTable,
-          User,
-          $$UsersTableFilterComposer,
-          $$UsersTableOrderingComposer,
-          $$UsersTableAnnotationComposer,
-          $$UsersTableCreateCompanionBuilder,
-          $$UsersTableUpdateCompanionBuilder,
-          (User, $$UsersTableReferences),
-          User,
-          PrefetchHooks Function({bool ticketsRefs, bool eventUserRolesRefs})
-        > {
-  $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$UsersTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$UsersTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$UsersTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> email = const Value.absent(),
-                Value<String> fullName = const Value.absent(),
-                Value<String?> profileUrl = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => UsersCompanion(
-                id: id,
-                email: email,
-                fullName: fullName,
-                profileUrl: profileUrl,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String email,
-                required String fullName,
-                Value<String?> profileUrl = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => UsersCompanion.insert(
-                id: id,
-                email: email,
-                fullName: fullName,
-                profileUrl: profileUrl,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<$UsersTable, User>(table),
-                  $$UsersTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({ticketsRefs = false, eventUserRolesRefs = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (ticketsRefs) db.tickets,
-                    if (eventUserRolesRefs) db.eventUserRoles,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (ticketsRefs)
-                        await $_getPrefetchedData<User, $UsersTable, Ticket>(
-                          currentTable: table,
-                          referencedTable: $$UsersTableReferences
-                              ._ticketsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$UsersTableReferences(db, table, p0).ticketsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.userId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (eventUserRolesRefs)
-                        await $_getPrefetchedData<
-                          User,
-                          $UsersTable,
-                          EventUserRole
-                        >(
-                          currentTable: table,
-                          referencedTable: $$UsersTableReferences
-                              ._eventUserRolesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$UsersTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).eventUserRolesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.userId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$UsersTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $UsersTable,
-      User,
-      $$UsersTableFilterComposer,
-      $$UsersTableOrderingComposer,
-      $$UsersTableAnnotationComposer,
-      $$UsersTableCreateCompanionBuilder,
-      $$UsersTableUpdateCompanionBuilder,
-      (User, $$UsersTableReferences),
-      User,
-      PrefetchHooks Function({bool ticketsRefs, bool eventUserRolesRefs})
-    >;
 typedef $$EventsTableCreateCompanionBuilder =
     EventsCompanion Function({
       required String id,
@@ -2140,6 +2232,7 @@ typedef $$EventsTableCreateCompanionBuilder =
       required String eventPlace,
       required int maxPlaces,
       required EventStatus status,
+      Value<int> updatedAtMs,
       Value<int> rowid,
     });
 typedef $$EventsTableUpdateCompanionBuilder =
@@ -2156,6 +2249,7 @@ typedef $$EventsTableUpdateCompanionBuilder =
       Value<String> eventPlace,
       Value<int> maxPlaces,
       Value<EventStatus> status,
+      Value<int> updatedAtMs,
       Value<int> rowid,
     });
 
@@ -2271,6 +2365,11 @@ class $$EventsTableFilterComposer
         column: $table.status,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
 
   Expression<bool> ticketsRefs(
     Expression<bool> Function($$TicketsTableFilterComposer f) f,
@@ -2391,6 +2490,11 @@ class $$EventsTableOrderingComposer
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$EventsTableAnnotationComposer
@@ -2445,6 +2549,11 @@ class $$EventsTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<EventStatus, String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
 
   Expression<T> ticketsRefs<T extends Object>(
     Expression<T> Function($$TicketsTableAnnotationComposer a) f,
@@ -2537,6 +2646,7 @@ class $$EventsTableTableManager
                 Value<String> eventPlace = const Value.absent(),
                 Value<int> maxPlaces = const Value.absent(),
                 Value<EventStatus> status = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EventsCompanion(
                 id: id,
@@ -2551,6 +2661,7 @@ class $$EventsTableTableManager
                 eventPlace: eventPlace,
                 maxPlaces: maxPlaces,
                 status: status,
+                updatedAtMs: updatedAtMs,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2567,6 +2678,7 @@ class $$EventsTableTableManager
                 required String eventPlace,
                 required int maxPlaces,
                 required EventStatus status,
+                Value<int> updatedAtMs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EventsCompanion.insert(
                 id: id,
@@ -2581,6 +2693,7 @@ class $$EventsTableTableManager
                 eventPlace: eventPlace,
                 maxPlaces: maxPlaces,
                 status: status,
+                updatedAtMs: updatedAtMs,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2670,6 +2783,7 @@ typedef $$TicketsTableCreateCompanionBuilder =
       required String qrSignature,
       required String userId,
       required String eventId,
+      Value<int> updatedAtMs,
       Value<int> rowid,
     });
 typedef $$TicketsTableUpdateCompanionBuilder =
@@ -2680,29 +2794,13 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<String> qrSignature,
       Value<String> userId,
       Value<String> eventId,
+      Value<int> updatedAtMs,
       Value<int> rowid,
     });
 
 final class $$TicketsTableReferences
     extends BaseReferences<_$AppDatabase, $TicketsTable, Ticket> {
   $$TicketsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $UsersTable _userIdTable(_$AppDatabase db) =>
-      db.users.createAlias('tickets__user_id__users__id');
-
-  $$UsersTableProcessedTableManager get userId {
-    final $_column = $_itemColumn<String>('user_id')!;
-
-    final manager = $$UsersTableTableManager(
-      $_db,
-      $_db.users,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
 
   static $EventsTable _eventIdTable(_$AppDatabase db) =>
       db.events.createAlias('tickets__event_id__events__id');
@@ -2752,28 +2850,15 @@ class $$TicketsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$UsersTableFilterComposer get userId {
-    final $$UsersTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableFilterComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$EventsTableFilterComposer get eventId {
     final $$EventsTableFilterComposer composer = $composerBuilder(
@@ -2828,28 +2913,15 @@ class $$TicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$UsersTableOrderingComposer get userId {
-    final $$UsersTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableOrderingComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$EventsTableOrderingComposer get eventId {
     final $$EventsTableOrderingComposer composer = $composerBuilder(
@@ -2900,28 +2972,13 @@ class $$TicketsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  $$UsersTableAnnotationComposer get userId {
-    final $$UsersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
 
   $$EventsTableAnnotationComposer get eventId {
     final $$EventsTableAnnotationComposer composer = $composerBuilder(
@@ -2960,7 +3017,7 @@ class $$TicketsTableTableManager
           $$TicketsTableUpdateCompanionBuilder,
           (Ticket, $$TicketsTableReferences),
           Ticket,
-          PrefetchHooks Function({bool userId, bool eventId})
+          PrefetchHooks Function({bool eventId})
         > {
   $$TicketsTableTableManager(_$AppDatabase db, $TicketsTable table)
     : super(
@@ -2981,6 +3038,7 @@ class $$TicketsTableTableManager
                 Value<String> qrSignature = const Value.absent(),
                 Value<String> userId = const Value.absent(),
                 Value<String> eventId = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TicketsCompanion(
                 id: id,
@@ -2989,6 +3047,7 @@ class $$TicketsTableTableManager
                 qrSignature: qrSignature,
                 userId: userId,
                 eventId: eventId,
+                updatedAtMs: updatedAtMs,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2999,6 +3058,7 @@ class $$TicketsTableTableManager
                 required String qrSignature,
                 required String userId,
                 required String eventId,
+                Value<int> updatedAtMs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TicketsCompanion.insert(
                 id: id,
@@ -3007,6 +3067,7 @@ class $$TicketsTableTableManager
                 qrSignature: qrSignature,
                 userId: userId,
                 eventId: eventId,
+                updatedAtMs: updatedAtMs,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3017,7 +3078,7 @@ class $$TicketsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({userId = false, eventId = false}) {
+          prefetchHooksCallback: ({eventId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -3037,19 +3098,6 @@ class $$TicketsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (userId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.userId,
-                                referencedTable: $$TicketsTableReferences
-                                    ._userIdTable(db),
-                                referencedColumn: $$TicketsTableReferences
-                                    ._userIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
                     if (eventId) {
                       state =
                           state.withJoin(
@@ -3087,13 +3135,14 @@ typedef $$TicketsTableProcessedTableManager =
       $$TicketsTableUpdateCompanionBuilder,
       (Ticket, $$TicketsTableReferences),
       Ticket,
-      PrefetchHooks Function({bool userId, bool eventId})
+      PrefetchHooks Function({bool eventId})
     >;
 typedef $$EventUserRolesTableCreateCompanionBuilder =
     EventUserRolesCompanion Function({
       required String userId,
       required String eventId,
       required Role role,
+      Value<int> updatedAtMs,
       Value<int> rowid,
     });
 typedef $$EventUserRolesTableUpdateCompanionBuilder =
@@ -3101,6 +3150,7 @@ typedef $$EventUserRolesTableUpdateCompanionBuilder =
       Value<String> userId,
       Value<String> eventId,
       Value<Role> role,
+      Value<int> updatedAtMs,
       Value<int> rowid,
     });
 
@@ -3111,23 +3161,6 @@ final class $$EventUserRolesTableReferences
     super.$_table,
     super.$_typedResult,
   );
-
-  static $UsersTable _userIdTable(_$AppDatabase db) =>
-      db.users.createAlias('event_user_roles__user_id__users__id');
-
-  $$UsersTableProcessedTableManager get userId {
-    final $_column = $_itemColumn<String>('user_id')!;
-
-    final manager = $$UsersTableTableManager(
-      $_db,
-      $_db.users,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
 
   static $EventsTable _eventIdTable(_$AppDatabase db) =>
       db.events.createAlias('event_user_roles__event_id__events__id');
@@ -3156,34 +3189,21 @@ class $$EventUserRolesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnWithTypeConverterFilters<Role, Role, String> get role =>
       $composableBuilder(
         column: $table.role,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
 
-  $$UsersTableFilterComposer get userId {
-    final $$UsersTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableFilterComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$EventsTableFilterComposer get eventId {
     final $$EventsTableFilterComposer composer = $composerBuilder(
@@ -3218,33 +3238,20 @@ class $$EventUserRolesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get role => $composableBuilder(
     column: $table.role,
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$UsersTableOrderingComposer get userId {
-    final $$UsersTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableOrderingComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$EventsTableOrderingComposer get eventId {
     final $$EventsTableOrderingComposer composer = $composerBuilder(
@@ -3279,31 +3286,16 @@ class $$EventUserRolesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
   GeneratedColumnWithTypeConverter<Role, String> get role =>
       $composableBuilder(column: $table.role, builder: (column) => column);
 
-  $$UsersTableAnnotationComposer get userId {
-    final $$UsersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
 
   $$EventsTableAnnotationComposer get eventId {
     final $$EventsTableAnnotationComposer composer = $composerBuilder(
@@ -3342,7 +3334,7 @@ class $$EventUserRolesTableTableManager
           $$EventUserRolesTableUpdateCompanionBuilder,
           (EventUserRole, $$EventUserRolesTableReferences),
           EventUserRole,
-          PrefetchHooks Function({bool userId, bool eventId})
+          PrefetchHooks Function({bool eventId})
         > {
   $$EventUserRolesTableTableManager(
     _$AppDatabase db,
@@ -3362,11 +3354,13 @@ class $$EventUserRolesTableTableManager
                 Value<String> userId = const Value.absent(),
                 Value<String> eventId = const Value.absent(),
                 Value<Role> role = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EventUserRolesCompanion(
                 userId: userId,
                 eventId: eventId,
                 role: role,
+                updatedAtMs: updatedAtMs,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3374,11 +3368,13 @@ class $$EventUserRolesTableTableManager
                 required String userId,
                 required String eventId,
                 required Role role,
+                Value<int> updatedAtMs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EventUserRolesCompanion.insert(
                 userId: userId,
                 eventId: eventId,
                 role: role,
+                updatedAtMs: updatedAtMs,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3389,7 +3385,7 @@ class $$EventUserRolesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({userId = false, eventId = false}) {
+          prefetchHooksCallback: ({eventId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -3409,20 +3405,6 @@ class $$EventUserRolesTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (userId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.userId,
-                                referencedTable: $$EventUserRolesTableReferences
-                                    ._userIdTable(db),
-                                referencedColumn:
-                                    $$EventUserRolesTableReferences
-                                        ._userIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
                     if (eventId) {
                       state =
                           state.withJoin(
@@ -3461,18 +3443,330 @@ typedef $$EventUserRolesTableProcessedTableManager =
       $$EventUserRolesTableUpdateCompanionBuilder,
       (EventUserRole, $$EventUserRolesTableReferences),
       EventUserRole,
-      PrefetchHooks Function({bool userId, bool eventId})
+      PrefetchHooks Function({bool eventId})
+    >;
+typedef $$SyncOutboxTableCreateCompanionBuilder =
+    SyncOutboxCompanion Function({
+      required String id,
+      required String entityType,
+      required String entityId,
+      required String op,
+      Value<String?> precondition,
+      required String payload,
+      required String status,
+      required int createdAtMs,
+      Value<int> attempts,
+      Value<int?> nextRetryAtMs,
+      Value<int> rowid,
+    });
+typedef $$SyncOutboxTableUpdateCompanionBuilder =
+    SyncOutboxCompanion Function({
+      Value<String> id,
+      Value<String> entityType,
+      Value<String> entityId,
+      Value<String> op,
+      Value<String?> precondition,
+      Value<String> payload,
+      Value<String> status,
+      Value<int> createdAtMs,
+      Value<int> attempts,
+      Value<int?> nextRetryAtMs,
+      Value<int> rowid,
+    });
+
+class $$SyncOutboxTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get precondition => $composableBuilder(
+    column: $table.precondition,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nextRetryAtMs => $composableBuilder(
+    column: $table.nextRetryAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncOutboxTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get precondition => $composableBuilder(
+    column: $table.precondition,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nextRetryAtMs => $composableBuilder(
+    column: $table.nextRetryAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncOutboxTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get op =>
+      $composableBuilder(column: $table.op, builder: (column) => column);
+
+  GeneratedColumn<String> get precondition => $composableBuilder(
+    column: $table.precondition,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<int> get nextRetryAtMs => $composableBuilder(
+    column: $table.nextRetryAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncOutboxTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncOutboxTable,
+          SyncOutboxData,
+          $$SyncOutboxTableFilterComposer,
+          $$SyncOutboxTableOrderingComposer,
+          $$SyncOutboxTableAnnotationComposer,
+          $$SyncOutboxTableCreateCompanionBuilder,
+          $$SyncOutboxTableUpdateCompanionBuilder,
+          (
+            SyncOutboxData,
+            BaseReferences<_$AppDatabase, $SyncOutboxTable, SyncOutboxData>,
+          ),
+          SyncOutboxData,
+          PrefetchHooks Function()
+        > {
+  $$SyncOutboxTableTableManager(_$AppDatabase db, $SyncOutboxTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncOutboxTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncOutboxTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncOutboxTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<String> op = const Value.absent(),
+                Value<String?> precondition = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> createdAtMs = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<int?> nextRetryAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncOutboxCompanion(
+                id: id,
+                entityType: entityType,
+                entityId: entityId,
+                op: op,
+                precondition: precondition,
+                payload: payload,
+                status: status,
+                createdAtMs: createdAtMs,
+                attempts: attempts,
+                nextRetryAtMs: nextRetryAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String entityType,
+                required String entityId,
+                required String op,
+                Value<String?> precondition = const Value.absent(),
+                required String payload,
+                required String status,
+                required int createdAtMs,
+                Value<int> attempts = const Value.absent(),
+                Value<int?> nextRetryAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncOutboxCompanion.insert(
+                id: id,
+                entityType: entityType,
+                entityId: entityId,
+                op: op,
+                precondition: precondition,
+                payload: payload,
+                status: status,
+                createdAtMs: createdAtMs,
+                attempts: attempts,
+                nextRetryAtMs: nextRetryAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncOutboxTable, SyncOutboxData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $SyncOutboxTable,
+                    SyncOutboxData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncOutboxTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncOutboxTable,
+      SyncOutboxData,
+      $$SyncOutboxTableFilterComposer,
+      $$SyncOutboxTableOrderingComposer,
+      $$SyncOutboxTableAnnotationComposer,
+      $$SyncOutboxTableCreateCompanionBuilder,
+      $$SyncOutboxTableUpdateCompanionBuilder,
+      (
+        SyncOutboxData,
+        BaseReferences<_$AppDatabase, $SyncOutboxTable, SyncOutboxData>,
+      ),
+      SyncOutboxData,
+      PrefetchHooks Function()
     >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$UsersTableTableManager get users =>
-      $$UsersTableTableManager(_db, _db.users);
   $$EventsTableTableManager get events =>
       $$EventsTableTableManager(_db, _db.events);
   $$TicketsTableTableManager get tickets =>
       $$TicketsTableTableManager(_db, _db.tickets);
   $$EventUserRolesTableTableManager get eventUserRoles =>
       $$EventUserRolesTableTableManager(_db, _db.eventUserRoles);
+  $$SyncOutboxTableTableManager get syncOutbox =>
+      $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
 }

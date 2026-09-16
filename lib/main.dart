@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ticketpass/core/database/database_provider.dart';
 import 'package:ticketpass/core/routing/app_router.dart';
 import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/features/auth/presentation/providers/auth_providers.dart';
@@ -29,7 +30,15 @@ Future<void> main() async {
     return;
   }
 
-  runApp(const ProviderScope(child: MyApp()));
+  // Base locale (events/tickets/rôles) — ouverte AVANT le premier frame.
+  final database = await openAppDatabase();
+
+  runApp(
+    ProviderScope(
+      overrides: [appDatabaseProvider.overrideWithValue(database)],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {

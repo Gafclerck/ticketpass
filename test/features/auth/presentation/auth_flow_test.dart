@@ -10,6 +10,7 @@ import 'package:ticketpass/features/home/presentation/screens/home_page.dart';
 import 'package:ticketpass/features/profile/presentation/screens/profile_page.dart';
 import 'package:ticketpass/main.dart';
 import '../../../helpers/test_auth.dart';
+import '../../../helpers/test_database.dart';
 
 /// Tests du flux d'authentification : guard du routeur (redirect + pending
 /// location) et formulaires Login / Register.
@@ -48,7 +49,10 @@ void main() {
       await pumpApp(
         tester,
         scope: ProviderScope(
-          overrides: [authUserRepositoryOverride(unauthenticated: true)],
+          overrides: [
+            authUserRepositoryOverride(unauthenticated: true),
+            appDatabaseInMemoryOverride(),
+          ],
           child: const MyApp(),
         ),
       );
@@ -62,10 +66,13 @@ void main() {
       await pumpApp(
         tester,
         scope: ProviderScope(
-          overrides: [authUserRepositoryOverride()],
-          child: const MyApp(),
-        ),
-        goTo: [AppRoutes.login],
+          overrides: [
+          authUserRepositoryOverride(),
+          appDatabaseInMemoryOverride(),
+        ],
+        child: const MyApp(),
+      ),
+      goTo: [AppRoutes.login],
       );
 
 expect(find.byType(HomePage), findsOneWidget);
@@ -79,10 +86,13 @@ expect(find.byType(HomePage), findsOneWidget);
       await pumpApp(
         tester,
         scope: ProviderScope(
-          overrides: [authUserRepositoryOverride(unauthenticated: true)],
-          child: const MyApp(),
-        ),
-        goTo: [AppRoutes.profile],
+          overrides: [
+          authUserRepositoryOverride(unauthenticated: true),
+          appDatabaseInMemoryOverride(),
+        ],
+        child: const MyApp(),
+      ),
+      goTo: [AppRoutes.profile],
       );
 
       // la destination protégée a été mémorisée, on est sur login
@@ -119,6 +129,7 @@ expect(find.byType(HomePage), findsOneWidget);
               unauthenticated: true,
               signInError: AuthException('Identifiants incorrects.'),
             ),
+            appDatabaseInMemoryOverride(),
           ],
           child: const MyApp(),
         ),
@@ -144,10 +155,13 @@ expect(find.byType(HomePage), findsOneWidget);
       await pumpApp(
         tester,
         scope: ProviderScope(
-          overrides: [authUserRepositoryOverride(unauthenticated: true)],
-          child: const MyApp(),
-        ),
-        goTo: [AppRoutes.register],
+          overrides: [
+          authUserRepositoryOverride(unauthenticated: true),
+          appDatabaseInMemoryOverride(),
+        ],
+        child: const MyApp(),
+      ),
+      goTo: [AppRoutes.register],
       );
 
       expect(find.text('Créer un compte'), findsOneWidget);
@@ -168,10 +182,13 @@ expect(find.byType(HomePage), findsOneWidget);
       await pumpApp(
         tester,
         scope: ProviderScope(
-          overrides: [authUserRepositoryOverride(unauthenticated: true)],
-          child: const MyApp(),
-        ),
-        goTo: [AppRoutes.register],
+          overrides: [
+          authUserRepositoryOverride(unauthenticated: true),
+          appDatabaseInMemoryOverride(),
+        ],
+        child: const MyApp(),
+      ),
+      goTo: [AppRoutes.register],
       );
 
       await tester.enterText(
@@ -203,10 +220,13 @@ expect(find.byType(HomePage), findsOneWidget);
       await pumpApp(
         tester,
         scope: ProviderScope(
-          overrides: [authUserRepositoryOverride(unauthenticated: true)],
-          child: const MyApp(),
-        ),
-        goTo: [AppRoutes.register],
+          overrides: [
+          authUserRepositoryOverride(unauthenticated: true),
+          appDatabaseInMemoryOverride(),
+        ],
+        child: const MyApp(),
+      ),
+      goTo: [AppRoutes.register],
       );
 
       await tester.tap(find.text('Déjà un compte ? Se connecter'));
