@@ -15,11 +15,17 @@ Ensuite on recommence le même cycle sur l'écran suivant.
 
 ## Commandes
 - `flutter analyze` — vérification statique (doit rester à 0 issue).
-- `flutter test` — tests (fake repo UC billets + boot widget).
+- `flutter test` — suite complète (140 tests : UC domaine/data + sync C-a→C-d + widget tests).
 
 ## Structuration
-- Entités conformes à `docs/classe.md` ; use cases côté domaine ; repos / fakes côté data ; présentation = Riverpod + widgets DS dans `lib/core/theme` et `lib/core/widgets`.
+- Entités conformes à `docs/classe.md` ; use cases côté domaine ; data = repos **drift** (`DriftEventRepository`, `DriftTicketRepository`, cache) + datasources **Firestore** (`FirestoreEventRemoteDataSource`, `FirestoreTicketRemoteDataSource`) ; présentation = Riverpod + widgets DS dans `lib/core/theme` et `lib/core/widgets`.
 - Identité utilisateur : passe par `features/auth/presentation/providers/current_user_provider.dart` (source unique, remplace le sprint Firebase Auth).
+
+## Sync (slice C — local-first, Firestore source de vérité)
+- **Toute écriture = enqueue outbox DANS la même transaction drift** que la mutation (parcours : `drift_*_repository.dart` + `sync_store.dart`). Un conflit **CAS** (billet) → op `cancelled` + pull de réconciliation ; échec réseau → backoff 2 s → 5 min, max 8 tentatives.
+- **PullService** : upsert events (`ticketsNumber = max(local, count)`, jamais écrit distants), rôles réassemblés (union remote + assigns pendants), suppression des absents **sauf pending**, **tombstone** = `event/delete` pending (le pull ne recrée jamais) ; tire mes billets + billets des events staff.
+- **Refetch auto** : `syncRevisionProvider` (bump par `SyncLifecycle`, lancé UNIQUEMENT dans `main()`, jamais en test) — les FutureProviders du catalogue le `watch`. Ne pas enchaîner un refetch manuel par-dessus.
+- `deploy/firestore.rules` = règles d'accès de référence (create auth, reste organiser/owner). Slope datasources/tests : `fake_cloud_firestore` (jamais de règles en test, jamais de timer en arrière-plan).
 
 ## Règles de routage (importantes)
 - Les 4 onglets du shell : `StatefulShellRoute.indexedStack` dans `lib/core/routing/app_router.dart` (nav bar flottante).

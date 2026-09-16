@@ -33,6 +33,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Artefacts générés par Flutter/DevTools (jamais à committer)
+**/generated_plugin_registrant.*
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.swift
+devtools_options.yaml
+
 # Symbolication related
 app.*.symbols
 

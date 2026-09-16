@@ -4,10 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ticketpass/core/routing/app_router.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
-import 'package:ticketpass/features/event/data/repositories/mock_event_repository.dart';
+import '../../helpers/mock_event_repository.dart';
 import 'package:ticketpass/features/event/presentation/providers/event_providers.dart';
+import '../../helpers/test_auth.dart';
 
 void main() {
+  setUp(() => resetAuthRouting());
   Future<void> pumpEdit(WidgetTester tester) async {
     tester.view.physicalSize = const Size(800, 1800);
     tester.view.devicePixelRatio = 1.0;
@@ -16,6 +18,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          authUserRepositoryOverride(),
           eventRepositoryProvider.overrideWithValue(
             MockEventRepository.demo(),
           ),

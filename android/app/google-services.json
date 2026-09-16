@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "829165622063",
+    "project_id": "ticketpass-bf30a",
+    "storage_bucket": "ticketpass-bf30a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:829165622063:android:06533633bd30028e18c7da",
+        "android_client_info": {
+          "package_name": "com.example.ticketpass"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "829165622063-jtfqmnoug7pkcu2lis1j6p2k8rabteqd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVrUnxse7UFS7Sb6wWmUKzkQOl-SCVHZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "829165622063-jtfqmnoug7pkcu2lis1j6p2k8rabteqd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

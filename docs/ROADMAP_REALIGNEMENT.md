@@ -80,8 +80,46 @@
 
 ## Backlog (hors périmètre de cette tâche)
 
-- **Phase 5 — Offline & SyncQueue (UC12-13, UC22-23)** : table `SyncQueue` (drift), outbox, drain via `connectivity_plus`, conflits.
-- **Phase 6 — Infra & qualité** : auth Firebase multi-utilisateurs, seeds réalistes par user, chiffrement du secret de signature hors code source.
+- **Produit restant autour du sync** : couvrir explicitement UC12-13 / UC22-23 si leur périmètre dépasse le cœur technique livré (outbox + drain + conflits — cf. « Sprint sync »), nettoyer la doc des écrans impactés par le refetch auto.
+- **Phase 6 — Infra & qualité** : seeds réalistes par user (l'auth Firebase multi-utilisateurs est désormais FAIT — cf. « Sprint auth & identité »), chiffrement du secret de signature hors code source.
+
+---
+
+## Sprint auth & identité — FAIT (big-bang TEMPORAIRE)
+
+- **Objectif** : remplacer l'identité démo par une vraie authentification Firebase (login, register, profil, avatar) + garde du routeur.
+- **⚠️ Écart méthodo assumé** : livré en **big-bang** (login + register + profil + routeur + `main` d'un coup) et validé d'un bloc, au lieu de l'écran-par-écran. Justifié par le fait que le garde du routeur est transversal (aucun écran testable en isolation). **C'est une exception TEMPORAIRE** : retour strict au cycle écran-par-écran (analyse → plan validé → évaluation d'impact → exécution → tests → commit) dès la prochaine étape.
+- **Périmètre livré** : module `features/auth` complet (domaine/data/présentation) branché Firebase réel (Auth + Firestore `users/{uid}` + Storage avatar) ; `User.id` = uid ; `currentUserProvider` source unique ; pages `/login` et `/register` (routes racine) ; `ProfilePage` réelle (signOut, avatar cliquable) ; `AuthRefreshListenable` (guard/redirect + retour sur la destination visée) ; `main.dart` (init Firebase try/catch + support de Garde) ; docs synchronisées.
+- **Critères d'acceptation** : `flutter analyze` 0 issue ; `flutter test` 78/78 verts — **atteints le 15/09**.
+- **Validation** : en attente de l'équipe avant commit (RD4).
+
+## Audit rétro-inspection — module auth (15/09/2026) — RD2
+
+Bilan post-landing (détail et règles à connaître : `docs/ONBOARDING_DOMAIN_DATA.md` §Pièges).
+
+| ID | Sévérité | Constat | Correctif retenu |
+|---|---|---|---|
+| B1 | 🔴 | `authStateChanges()` fait **1 lecture Firestore par événement** (`asyncMap`) et le listener d'`AuthController` n'a pas d'`onError` ; une lecture KO (ex. boot hors-ligne) **termine le flux** (single-subscription) → logout/révocation ignorés, routeur figé « connecté » | ✅ **Corrigé (fix final v1)** : repli synchrone sur les données Auth dans le `asyncMap` (try/catch → `_fallbackUser`), `onError` posé au listener |
+| B2 | 🟠 | `ref.watch(currentUserProvider)!` (8 pages) : une déconnexion asynchrone peut rebuilder avant le redirect → `!` sur null | ✅ **Corrigé (fix final v1)** : garde null par page (Scaffold vide en build, early return en callback) — plus aucun `!` sur `currentUserProvider` |
+| B3 | 🟠 | `authRefreshListenable` = singleton global hors Riverpod ; invariant manuel « toute mutation d'état DOIT notifier » ; oubli de `resetAuthRouting()` = tests flaky | Invariant documenté (fait) ; rattacher l'état de routage à l'état auth si possible |
+| B4 | 🟡 | `watchAuthStateProvider` inutilisé ; erreurs Storage/Firestore non mappées ; `image_picker` desktop ignore maxWidth/quality | Consommer ou supprimer le provider ; mapper Storage ; note desktop |
+
+**Invariant central du module** : l'UI pouvaient utiliser `currentUser!` uniquement parce que (1) restauration synchrone `currentUser`, (2) guard du routeur, (3) notification du listenable à chaque mutation — étaient TOUJOURS vrais, dans le bon ordre **et le bon timing** ; les bugs vus étaient des failles d'ordre temporel. Depuis le fix final v1, les pages ne supposent plus l'invariant : garde null systématique avant usage de `user.id`.
+
+**Non fait, à planifier** : tests widget du Profil (signOut, avatar), test du chemin d'erreur du flux, email vérification / password reset, règles Firebase Firestore (`/users/{uid}`) + Storage à écrire, nettoyage des anciens avatars Storage, résolution de la divergence `classe.md` (password/authId) vs entité vs schéma drift.
+
+---
+
+## Sprint sync — offline (ex-Phase 5) — FAIT (18/09/2026)
+
+- **Objectif** : cache local drift + convergence vers Firestore (source de vérité), en **local-first** : l'app lis reste fonctionnelle hors-ligne et chaque écriture est rejouée.
+- **Périmètre livré (slice C, commits)** :
+  - **C-a (`cce271c`)** : `EventRoleModel`, `TicketModel.updatedAtMs`, `EventRemoteDataSource` (create/update merge, suppression cascade par lots 400, `assignRole` `arrayUnion`) ; `TicketRemoteDataSource` (saveGenerated/fetch/fetchMyTickets collectionGroup, `claimTicket`/`validateTicketEntry` en transaction **CAS**, rejeu idempotent, `TicketStateConflictException`) ; règles `deploy/firestore.rules` (create auth, le reste organiser/owner). **106 tests**.
+  - **C-b (`d8a713f`)** : `core/sync/sync_store.dart` — outbox `SyncOutbox`, `claimDue` (CAS anti-course), `markFailed` backoff exponentiel **2 s → 5 min**, **max 8 tentatives** puis `cancelled` ; `sync_handlers.dart` (mapping op → datasource). **121 tests**.
+  - **C-c (`85680c9`)** : enqueue outbox **dans les mêmes transactions drift** que les écritures ; `SyncEngine` (`runOnce` single-flight, conflit → `cancelled` + pull de réconciliation) ; `PullService` (upsert events `/ max(local, count)`, rôles réassemblés sans perdre les assigns pendants, suppression des absents sauf pending, **tombstones** jamais recréés, mes billets + billets staff) ; `SyncLifecycle` (auth + `connectivity_plus`, boot hors-ligne différé) ; `syncRevisionProvider` → refetch auto des FutureProviders du catalogue ; câblage `main()` (ProviderContainer + `UncontrolledProviderScope`). **141 tests**.
+  - **C-d (`6f556b0`)** : suppression du code mort (`TicketLocalDataSource`, `watchAuthStateProvider` — audit B4). **141 tests**.
+- **Décisions validées** : conflit CAS → `cancelled` + pull ; boot offline → pas de pull/drain, reprise sur reconnect ; `ticketsNumber` local = `max(local, count)` jamais écrit dans Firestore ; suppression propagée par cascade client + tombstone (un `delete` pending empêche le pull de recréer l'event).
+- **Critères d'acceptation** : `flutter analyze` 0 issue ; `flutter test` verts — **141/141** au 18/09, **140/140** après le fix final v1 (suppression du code mort `WatchAuthState` + déplacement des fakes dans `test/helpers`).
 
 ---
 
@@ -94,3 +132,5 @@
 | 2 — EventDetailScreen | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 31/31 verts |
 | 3 — Gestion & contrôle | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 40/40 verts |
 | 4 — Top bar + safe area | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 42/42 verts |
+| Sprint auth & identité | **Fait (big-bang temporaire)** | 15/09 — `flutter analyze` 0 issue + `flutter test` 78/78 verts — correctifs d'audit B1-B4 à planifier |
+| 5 — Offline & sync (slice C) | **Fait** | 18/09 — `flutter analyze` 0 issue + `flutter test` 141/141 verts (~✓ B4 : `watchAuthStateProvider` supprimé en C-d) |

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock_event_repository.dart';
+import '../../../../core/database/database_provider.dart';
+import '../../../../core/sync/sync_providers.dart';
+import '../../data/repositories/drift_event_repository.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_user_role.dart';
 import '../../domain/repositories/event_repository.dart';
@@ -14,7 +16,7 @@ import '../../domain/usecases/get_my_events.dart';
 import '../../domain/usecases/update_event.dart';
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
-  return MockEventRepository.demo();
+  return DriftEventRepository(ref.watch(appDatabaseProvider));
 });
 
 final createEventProvider = Provider<CreateEvent>((ref) {
@@ -37,10 +39,13 @@ final myEventsProvider = FutureProvider.family<List<Event>, String>((
   ref,
   userId,
 ) {
+  // Refetch automatique à chaque cycle de sync (rev incrémentée par main()).
+  ref.watch(syncRevisionProvider);
   return ref.watch(getMyEventsProvider).call(userId);
 });
 
 final discoverEventsProvider = FutureProvider<List<Event>>((ref) {
+  ref.watch(syncRevisionProvider);
   return ref.watch(getDiscoverEventsProvider).call();
 });
 

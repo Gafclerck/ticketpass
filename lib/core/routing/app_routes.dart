@@ -23,4 +23,11 @@ abstract class AppRoutes {
   // Pages plein-écran (hors nav) — routes racine + AppShell obligatoires
   static const String eventCreate = '/event/create';
   static const String eventEdit = '/event/edit';
+
+  // Auth — pages plein-écran (hors nav), hors StatefulShellRoute
+  static const String login = '/login';
+  static const String register = '/register';
+
+  static bool isAuthPage(String location) =>
+      location == login || location == register;
 }
