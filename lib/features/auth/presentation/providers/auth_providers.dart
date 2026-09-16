@@ -10,7 +10,6 @@ import 'package:ticketpass/features/auth/domain/usecases/sign_in.dart';
 import 'package:ticketpass/features/auth/domain/usecases/sign_out.dart';
 import 'package:ticketpass/features/auth/domain/usecases/sign_up.dart';
 import 'package:ticketpass/features/auth/domain/usecases/update_profile.dart';
-import 'package:ticketpass/features/auth/domain/usecases/watch_auth_state.dart';
 
 /// Implémentation RÉELLE (Firebase Auth + Firestore + Storage). Plus aucun
 /// point de bascule fake : les tests remplacent ce provider par un mock
@@ -35,10 +34,6 @@ final signUpProvider = Provider<SignUp>((ref) {
 
 final signOutProvider = Provider<SignOut>((ref) {
   return SignOut(ref.watch(authUserRepositoryProvider));
-});
-
-final watchAuthStateProvider = Provider<WatchAuthState>((ref) {
-  return WatchAuthState(ref.watch(authUserRepositoryProvider));
 });
 
 final updateProfileProvider = Provider<UpdateProfile>((ref) {
