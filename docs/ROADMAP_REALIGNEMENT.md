@@ -99,12 +99,12 @@ Bilan post-landing (détail et règles à connaître : `docs/ONBOARDING_DOMAIN_D
 
 | ID | Sévérité | Constat | Correctif retenu |
 |---|---|---|---|
-| B1 | 🔴 | `authStateChanges()` fait **1 lecture Firestore par événement** (`asyncMap`) et le listener d'`AuthController` n'a pas d'`onError` ; une lecture KO (ex. boot hors-ligne) **termine le flux** (single-subscription) → logout/révocation ignorés, routeur figé « connecté » | Option A : identité en `map` sync (pas d'`asyncMap`), profil enrichi chargé à part ; `onError` au listener |
-| B2 | 🟠 | `ref.watch(currentUserProvider)!` (8 pages) : une déconnexion asynchrone peut rebuilder avant le redirect → `!` sur null | Garde null par page OU assertion unique dans le provider |
+| B1 | 🔴 | `authStateChanges()` fait **1 lecture Firestore par événement** (`asyncMap`) et le listener d'`AuthController` n'a pas d'`onError` ; une lecture KO (ex. boot hors-ligne) **termine le flux** (single-subscription) → logout/révocation ignorés, routeur figé « connecté » | ✅ **Corrigé (fix final v1)** : repli synchrone sur les données Auth dans le `asyncMap` (try/catch → `_fallbackUser`), `onError` posé au listener |
+| B2 | 🟠 | `ref.watch(currentUserProvider)!` (8 pages) : une déconnexion asynchrone peut rebuilder avant le redirect → `!` sur null | ✅ **Corrigé (fix final v1)** : garde null par page (Scaffold vide en build, early return en callback) — plus aucun `!` sur `currentUserProvider` |
 | B3 | 🟠 | `authRefreshListenable` = singleton global hors Riverpod ; invariant manuel « toute mutation d'état DOIT notifier » ; oubli de `resetAuthRouting()` = tests flaky | Invariant documenté (fait) ; rattacher l'état de routage à l'état auth si possible |
 | B4 | 🟡 | `watchAuthStateProvider` inutilisé ; erreurs Storage/Firestore non mappées ; `image_picker` desktop ignore maxWidth/quality | Consommer ou supprimer le provider ; mapper Storage ; note desktop |
 
-**Invariant central du module** : l'UI n'utilise `currentUser!` que parce que (1) restauration synchrone `currentUser`, (2) guard du routeur, (3) notification du listenable à chaque mutation — sont TOUJOURS vrais, dans le bon ordre **et le bon timing**. Tous les bugs vus sont des failles d'ordre temporel (flux/erreur asynchrone vs premier frame du routeur).
+**Invariant central du module** : l'UI pouvaient utiliser `currentUser!` uniquement parce que (1) restauration synchrone `currentUser`, (2) guard du routeur, (3) notification du listenable à chaque mutation — étaient TOUJOURS vrais, dans le bon ordre **et le bon timing** ; les bugs vus étaient des failles d'ordre temporel. Depuis le fix final v1, les pages ne supposent plus l'invariant : garde null systématique avant usage de `user.id`.
 
 **Non fait, à planifier** : tests widget du Profil (signOut, avatar), test du chemin d'erreur du flux, email vérification / password reset, règles Firebase Firestore (`/users/{uid}`) + Storage à écrire, nettoyage des anciens avatars Storage, résolution de la divergence `classe.md` (password/authId) vs entité vs schéma drift.
 

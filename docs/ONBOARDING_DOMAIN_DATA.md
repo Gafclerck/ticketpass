@@ -295,16 +295,19 @@ flux asynchrone, redirect différé), pas une faille d'état.
    identifiants en anglais. Doc en français.
 7. **Entités sans commentaires parasites** : les doc-comments expliquent le
    POURQUOI (décisions, écarts vs `classe.md`), pas le quoi.
-8. **Le flux d'auth peut mourir silencieusement (B1, à corriger)** :
-   `FirebaseAuthRepository.authStateChanges()` fait 1 lecture Firestore par
-   événement (`asyncMap`), et `AuthController.build()` écoute **sans `onError`**.
-   Une lecture KO (ex. boot hors-ligne sans cache Firestore) **termine le flux**
-   single-subscription → plus aucun événement (logout/révocation ignorés,
-   routeur figé « connecté »). Correctif retenu (audit du 15/09) : identité
-   Auth en `map` sync + `onError` au listener, profil Firestore chargé à part.
+8. **Le flux d'auth peut mourir silencieusement (B1 — corrigé, fix final v1)** :
+   `FirebaseAuthRepository.authStateChanges()` faisait 1 lecture Firestore par
+   événement (`asyncMap`) et `AuthController.build()` écoutait sans `onError` :
+   une lecture KO (boot hors-ligne) terminait le flux → routeur figé.
+   Correctif appliqué : repli synchrone sur les données Auth dans le `asyncMap`
+   (try/catch → `_fallbackUser`), le flux ne meurt jamais ; `onError` posé au
+   listener. Dépendance reteint : profil Firestore hydraté seulement en ligne.
 9. **`currentUser!` n'est sûr QUE par le triptyque (cf. §5 Règle d'or auth)** :
    si tu lis `currentUserProvider` hors d'un écran protégé, ou si la session
    peut passer à null pendant un rebuild avant le redirect → le `!` crashe.
+   Corrigé (fix final v1, règle B2) : chaque page pose une garde null synchrone
+   (return d'un Scaffold vide dans le build, early return dans les callbacks)
+   avant d'utiliser `user.id`.
    Garde null côté page (`if (user == null) return ...`) si tu doutes.
 10. **Invariant `authRefreshListenable` (B3)** : singleton global hors Riverpod,
     partagé entre `AuthController` et le `GoRouter`. Routeur et état ne restent

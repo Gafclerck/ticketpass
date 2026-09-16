@@ -59,11 +59,17 @@ class AuthController extends Notifier<User?> {
     final initial = repository.currentUser;
 
     _authSubscription?.cancel();
-    _authSubscription = repository.authStateChanges().listen((user) {
-      if (!ref.mounted) return;
-      state = user;
-      authRefreshListenable.notify(isAuthenticated: user != null);
-    });
+    _authSubscription = repository.authStateChanges().listen(
+      (user) {
+        if (!ref.mounted) return;
+        state = user;
+        authRefreshListenable.notify(isAuthenticated: user != null);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        // Erreur du flux lui-même (réseau) : on conserve l'état courant et le
+        // routeur reste cohérent ; aucune exception ne remonte non traitée.
+      },
+    );
     ref.onDispose(() => _authSubscription?.cancel());
 
     if (initial != null) {

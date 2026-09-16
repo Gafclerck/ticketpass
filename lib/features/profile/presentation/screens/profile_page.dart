@@ -78,7 +78,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider)!;
+    final user = ref.watch(currentUserProvider);
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SizedBox.shrink(),
+      );
+    }
     final userId = user.id;
     final eventsCount = ref.watch(myEventsProvider(userId)).value?.length ?? 0;
     final tickets = ref.watch(myTicketsProvider(userId)).value ?? const [];

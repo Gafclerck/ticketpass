@@ -44,7 +44,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(discoverEventsProvider);
-    final currentUser = ref.watch(currentUserProvider)!;
+    final currentUser = ref.watch(currentUserProvider);
+    if (currentUser == null) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SizedBox.shrink(),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,

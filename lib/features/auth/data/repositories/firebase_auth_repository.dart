@@ -26,7 +26,13 @@ class FirebaseAuthRepository implements AuthUserRepository {
   Stream<User?> authStateChanges() {
     return _auth.authStateChanges().asyncMap((firebaseUser) async {
       if (firebaseUser == null) return null;
-      return _toDomainUser(firebaseUser);
+      try {
+        return await _toDomainUser(firebaseUser);
+      } catch (_) {
+        // Firestore indisponible (boot hors-ligne) : repli synchrone sur les
+        // données Auth pour que le flux ne meure jamais (règle B1).
+        return _fallbackUser(firebaseUser);
+      }
     });
   }
 
@@ -36,12 +42,7 @@ class FirebaseAuthRepository implements AuthUserRepository {
     if (firebaseUser == null) return null;
     // Lecture synchrone : repli sur les données Auth. Le flux hydrate ensuite
     // le profil Firestore complet (fullName/profileUrl renseignés).
-    return User(
-      id: firebaseUser.uid,
-      email: firebaseUser.email ?? '',
-      fullName: firebaseUser.displayName ?? '',
-      profileUrl: firebaseUser.photoURL,
-    );
+    return _fallbackUser(firebaseUser);
   }
 
   @override
@@ -126,6 +127,10 @@ class FirebaseAuthRepository implements AuthUserRepository {
       return doc.toEntity();
     }
     // Compte Auth sans profil Firestore (legacy) : repli sur les données Auth.
+    return _fallbackUser(firebaseUser);
+  }
+
+  User _fallbackUser(firebase.User firebaseUser) {
     return User(
       id: firebaseUser.uid,
       email: firebaseUser.email ?? '',

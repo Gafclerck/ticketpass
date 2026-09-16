@@ -89,11 +89,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
       final bytes = _avatarBytes;
       if (bytes != null && bytes.isNotEmpty) {
-        final userId = ref.read(currentUserProvider)!.id;
-        final url = await ref
-            .read(profileImageDatasourceProvider)
-            .uploadProfileImage(userId: userId, bytes: bytes);
-        await controller.updateProfile(profileUrl: url);
+        final user = ref.read(currentUserProvider);
+        if (user != null) {
+          final url = await ref
+              .read(profileImageDatasourceProvider)
+              .uploadProfileImage(userId: user.id, bytes: bytes);
+          await controller.updateProfile(profileUrl: url);
+        }
       }
       // Succès : le redirect du routeur gère la navigation.
     } on AuthException catch (error) {

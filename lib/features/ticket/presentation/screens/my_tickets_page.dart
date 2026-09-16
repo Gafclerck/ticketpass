@@ -22,7 +22,14 @@ class MyTicketsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = ref.watch(currentUserProvider)!.id;
+    final user = ref.watch(currentUserProvider);
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SizedBox.shrink(),
+      );
+    }
+    final userId = user.id;
     final ticketsAsync = ref.watch(myTicketsProvider(userId));
 
     return Scaffold(
