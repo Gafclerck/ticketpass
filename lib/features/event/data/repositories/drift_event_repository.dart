@@ -2,10 +2,12 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/database/app_database.dart' as db;
+import '../../../../core/sync/sync_store.dart';
 import '../../../auth/domain/entities/role.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_user_role.dart';
 import '../../domain/repositories/event_repository.dart';
+import '../models/event_model.dart';
 
 /// Implémentation [EventRepository] sur la base locale (drift), **cache
 /// hors-ligne** : les écritures sont acceptées immédiatement puis ramenées à
@@ -18,8 +20,10 @@ import '../../domain/repositories/event_repository.dart';
 /// ordre).
 class DriftEventRepository implements EventRepository {
   final db.AppDatabase database;
+  final SyncStore syncStore;
 
-  const DriftEventRepository(this.database);
+  DriftEventRepository(this.database, {SyncStore? syncStore})
+      : syncStore = syncStore ?? SyncStore(database);
 
   static int _nowMs() => DateTime.now().millisecondsSinceEpoch;
 
@@ -66,18 +70,42 @@ class DriftEventRepository implements EventRepository {
     final created = event.id.isEmpty
         ? event.copyWith(id: const Uuid().v4())
         : event;
+    final nowMs = _nowMs();
 
     await database.transaction(() async {
       await database.into(database.events).insert(
-            _toCompanion(created).copyWith(updatedAtMs: Value(_nowMs())),
+            _toCompanion(created).copyWith(updatedAtMs: Value(nowMs)),
           );
       await database.into(database.eventUserRoles).insert(
             db.EventUserRolesCompanion.insert(
               userId: userId,
               eventId: created.id,
               role: Role.organiser,
-            ).copyWith(updatedAtMs: Value(_nowMs())),
+            ).copyWith(updatedAtMs: Value(nowMs)),
           );
+      // Même transaction : la création locale et son enqueue outbox sont
+      // annulées ensemble en cas d'échec.
+      await syncStore.enqueue(
+        entityType: SyncEntityType.event,
+        entityId: created.id,
+        op: SyncOp.create,
+        payload: EventModel.fromEntity(
+          created,
+          updatedAtMs: nowMs,
+        ).toJson(),
+        nowMs: nowMs,
+      );
+      await syncStore.enqueue(
+        entityType: SyncEntityType.role,
+        entityId: created.id,
+        op: SyncOp.assign,
+        payload: {
+          'event_id': created.id,
+          'user_id': userId,
+          'role': Role.organiser.name,
+        },
+        nowMs: nowMs,
+      );
     });
 
     return created;
@@ -85,26 +113,36 @@ class DriftEventRepository implements EventRepository {
 
   @override
   Future<Event> updateEvent(Event event) async {
-    // `ticketsNumber` est exclu de l'écriture : il est détenu par la génération
-    // (`generateTickets`) et non par le formulaire d'édition.
-    final updated = await (database.update(database.events)
-          ..where((row) => row.id.equals(event.id)))
-        .write(
-      _toCompanion(event).copyWith(
-        ticketsNumber: const Value.absent(),
-        updatedAtMs: Value(_nowMs()),
-      ),
-    );
+    final nowMs = _nowMs();
+    await database.transaction(() async {
+      final updated = await (database.update(database.events)
+            ..where((row) => row.id.equals(event.id)))
+          .write(
+        _toCompanion(event).copyWith(
+          ticketsNumber: const Value.absent(),
+          updatedAtMs: Value(nowMs),
+        ),
+      );
 
-    if (updated != 1) {
-      throw Exception('Événement introuvable.');
-    }
+      if (updated != 1) {
+        throw Exception('Événement introuvable.');
+      }
+
+      await syncStore.enqueue(
+        entityType: SyncEntityType.event,
+        entityId: event.id,
+        op: SyncOp.update,
+        payload: EventModel.fromEntity(event, updatedAtMs: nowMs).toJson(),
+        nowMs: nowMs,
+      );
+    });
 
     return event;
   }
 
   @override
   Future<void> deleteEvent(String eventId) async {
+    final nowMs = _nowMs();
     await database.transaction(() async {
       await (database.delete(database.tickets)
             ..where((row) => row.eventId.equals(eventId)))
@@ -115,6 +153,14 @@ class DriftEventRepository implements EventRepository {
       await (database.delete(database.events)
             ..where((row) => row.id.equals(eventId)))
           .go();
+      // La substitution (cascade côté distant + tombstone de « non recréation »
+      // au pull) est portée par cette ligne outbox.
+      await syncStore.enqueue(
+        entityType: SyncEntityType.event,
+        entityId: eventId,
+        op: SyncOp.delete,
+        nowMs: nowMs,
+      );
     });
   }
 
@@ -183,15 +229,29 @@ class DriftEventRepository implements EventRepository {
       throw Exception('Impossible d’attribuer un rôle à un utilisateur inconnu.');
     }
 
-    // Idempotent : la clé primaire composite (userId, eventId, role) fait que
-    // la re-désignation du même rôle est un no-op.
-    await database.into(database.eventUserRoles).insert(
-      db.EventUserRolesCompanion.insert(
-        userId: role.userId,
-        eventId: role.eventId,
-        role: role.role,
-      ).copyWith(updatedAtMs: Value(_nowMs())),
-      mode: InsertMode.insertOrIgnore,
-    );
+    final nowMs = _nowMs();
+    await database.transaction(() async {
+      // Idempotent : la clé primaire composite (userId, eventId, role) fait que
+      // la re-désignation du même rôle est un no-op.
+      await database.into(database.eventUserRoles).insert(
+        db.EventUserRolesCompanion.insert(
+          userId: role.userId,
+          eventId: role.eventId,
+          role: role.role,
+        ).copyWith(updatedAtMs: Value(nowMs)),
+        mode: InsertMode.insertOrIgnore,
+      );
+      await syncStore.enqueue(
+        entityType: SyncEntityType.role,
+        entityId: role.eventId,
+        op: SyncOp.assign,
+        payload: {
+          'event_id': role.eventId,
+          'user_id': role.userId,
+          'role': role.role.name,
+        },
+        nowMs: nowMs,
+      );
+    });
   }
 }

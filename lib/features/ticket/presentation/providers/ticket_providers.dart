@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ticketpass/core/database/database_provider.dart';
+import 'package:ticketpass/core/sync/sync_providers.dart';
 import 'package:ticketpass/features/ticket/domain/usecases/acquire_ticket.dart';
 import 'package:ticketpass/features/ticket/domain/usecases/generate_tickets.dart';
 import 'package:ticketpass/features/ticket/domain/usecases/get_participants.dart';
@@ -31,6 +32,7 @@ final myTicketsProvider = FutureProvider.family<List<Ticket>, String>((
   ref,
   userId,
 ) {
+  ref.watch(syncRevisionProvider);
   return ref.watch(getMyTicketsProvider).call(userId);
 });
 
@@ -55,6 +57,7 @@ final eventTicketsProvider = FutureProvider.family<List<Ticket>, String>((
   ref,
   eventId,
 ) {
+  ref.watch(syncRevisionProvider);
   return ref.watch(getTicketsForEventProvider).call(eventId);
 });
 

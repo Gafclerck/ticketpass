@@ -1,11 +1,15 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/database/app_database.dart' as db;
 import '../../../../core/security/ticket_signature_service.dart';
+import '../../../../core/sync/sync_store.dart';
 import '../../domain/entities/ticket.dart';
 import '../../domain/entities/ticket_status.dart';
 import '../../domain/repositories/ticket_repository.dart';
+import '../models/ticket_model.dart';
 
 /// Implémentation [TicketRepository] sur la base locale (drift), **cache
 /// hors-ligne** pour la vérification de billet (scan offline) : les écritures
@@ -19,8 +23,10 @@ import '../../domain/repositories/ticket_repository.dart';
 /// `acquireTicket` (UC19) créent/attribuent des billets.
 class DriftTicketRepository implements TicketRepository {
   final db.AppDatabase database;
+  final SyncStore syncStore;
 
-  const DriftTicketRepository(this.database);
+  DriftTicketRepository(this.database, {SyncStore? syncStore})
+      : syncStore = syncStore ?? SyncStore(database);
 
   static int _nowMs() => DateTime.now().millisecondsSinceEpoch;
 
@@ -120,6 +126,20 @@ class DriftTicketRepository implements TicketRepository {
           .write(
         db.EventsCompanion(ticketsNumber: Value(current.ticketsNumber + quantity)),
       );
+
+      // Un billet généré = une ligne outbox (idempotente côté distant).
+      for (final ticket in generated) {
+        await syncStore.enqueue(
+          entityType: SyncEntityType.ticket,
+          entityId: eventId,
+          op: SyncOp.generate,
+          payload: TicketModel.fromEntity(
+            ticket,
+            updatedAtMs: nowMs,
+          ).toJson(),
+          nowMs: nowMs,
+        );
+      }
     });
 
     return generated;
@@ -159,25 +179,41 @@ class DriftTicketRepository implements TicketRepository {
     }
 
     // Attribution atomique : ne met à jour QUE si le billet est encore libre.
+    // Idem pour l'enqueue (même transaction : pas d'opération outbox si le
+    // billet n'a pas été attribué).
     final target = available.first;
-    final updated = await (database.update(database.tickets)
-          ..where(
-            (row) =>
-                row.id.equals(target.id) &
-                row.status.equals(TicketStatus.unused.name) &
-                row.userId.equals(''),
-          ))
-        .write(
-      db.TicketsCompanion(
-        userId: Value(userId),
-        status: Value(TicketStatus.valid),
-        updatedAtMs: Value(_nowMs()),
-      ),
-    );
+    await database.transaction(() async {
+      final updated = await (database.update(database.tickets)
+            ..where(
+              (row) =>
+                  row.id.equals(target.id) &
+                  row.status.equals(TicketStatus.unused.name) &
+                  row.userId.equals(''),
+            ))
+          .write(
+        db.TicketsCompanion(
+          userId: Value(userId),
+          status: Value(TicketStatus.valid),
+          updatedAtMs: Value(_nowMs()),
+        ),
+      );
 
-    if (updated != 1) {
-      throw Exception('Plus de billet disponible pour cet événement.');
-    }
+      if (updated != 1) {
+        throw Exception('Plus de billet disponible pour cet événement.');
+      }
+
+      await syncStore.enqueue(
+        entityType: SyncEntityType.ticket,
+        entityId: target.id,
+        op: SyncOp.acquire,
+        precondition: jsonEncode({'status': TicketStatus.unused.name}),
+        payload: {
+          'event_id': eventId,
+          'ticket_id': target.id,
+          'user_id': userId,
+        },
+      );
+    });
 
     return _toDomain(target).copyWith(
       userId: userId,
@@ -215,14 +251,24 @@ class DriftTicketRepository implements TicketRepository {
       );
     }
 
-    await (database.update(database.tickets)
-          ..where((row) => row.id.equals(ticketId)))
-        .write(
-      db.TicketsCompanion(
-        status: Value(TicketStatus.used),
-        updatedAtMs: Value(_nowMs()),
-      ),
-    );
+    await database.transaction(() async {
+      await (database.update(database.tickets)
+            ..where((row) => row.id.equals(ticketId)))
+          .write(
+        db.TicketsCompanion(
+          status: Value(TicketStatus.used),
+          updatedAtMs: Value(_nowMs()),
+        ),
+      );
+
+      await syncStore.enqueue(
+        entityType: SyncEntityType.ticket,
+        entityId: ticketId,
+        op: SyncOp.validate,
+        precondition: jsonEncode({'status': TicketStatus.valid.name}),
+        payload: {'event_id': row.eventId, 'ticket_id': ticketId},
+      );
+    });
 
     return _toDomain(row).copyWith(status: TicketStatus.used);
   }

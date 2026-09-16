@@ -31,6 +31,39 @@ abstract final class SyncOp {
   static const validate = 'validate';
 }
 
+/// Etat des opérations en cours d'acheminement (« en avance », aux yeux du pull).
+///
+/// Les pull-service ne doit pas écraser ni supprimer ce que le local a écrit en
+/// attente de push, ni recréer ce qu'un `delete` local veut supprimer.
+class OutboxSnapshot {
+  /// Ids d'événements avec un op `create`/`update` en cours (local en avance).
+  final Set<String> pendingEventIds;
+
+  /// Ids d'événements avec un op `delete` en cours (tombstone : jamais
+  /// recréé par le pull tant que la suppression n'a pas été poussée).
+  final Set<String> tombstoneEventIds;
+
+  /// Clés `eventId|userId|role` des `assign` en cours.
+  final Set<String> pendingRoleKeys;
+
+  /// Ids de billets couverts par une op en cours (generate/acquire/validate).
+  final Set<String> pendingTicketIds;
+
+  const OutboxSnapshot({
+    required this.pendingEventIds,
+    required this.tombstoneEventIds,
+    required this.pendingRoleKeys,
+    required this.pendingTicketIds,
+  });
+
+  static const empty = OutboxSnapshot(
+    pendingEventIds: {},
+    tombstoneEventIds: {},
+    pendingRoleKeys: {},
+    pendingTicketIds: {},
+  );
+}
+
 /// Résultat de [SyncStore.markFailed].
 enum MarkFailedResult { retry, cancelled }
 
@@ -210,5 +243,60 @@ class SyncStore {
           ..where((row) => row.status.equals(SyncStatus.pending)))
         .get();
     return count.length;
+  }
+
+  /// État des opérations en cours — utilisé par le pull pour ne pas se mettre
+  /// en travers de ce que le local a écrit en attente de push.
+  Future<OutboxSnapshot> snapshot() async {
+    final rows = await (database.select(database.syncOutbox)
+          ..where(
+            (row) =>
+                row.status.equals(SyncStatus.pending) |
+                row.status.equals(SyncStatus.syncing),
+          ))
+        .get();
+
+    final pendingEvents = <String>{};
+    final tombstones = <String>{};
+    final roles = <String>{};
+    final tickets = <String>{};
+
+    for (final row in rows) {
+      switch (row.entityType) {
+        case SyncEntityType.event:
+          if (row.op == SyncOp.delete) {
+            tombstones.add(row.entityId);
+          } else {
+            pendingEvents.add(row.entityId);
+          }
+        case SyncEntityType.role:
+          if (row.op == SyncOp.assign) {
+            final payload = jsonDecode(row.payload) as Map<String, dynamic>;
+            roles.add('${row.entityId}|${payload['user_id']}|${payload['role']}');
+          }
+        case SyncEntityType.ticket:
+          if (row.op == SyncOp.generate) {
+            final payload = jsonDecode(row.payload) as Map<String, dynamic>;
+            tickets.add(payload['id'] as String);
+          } else {
+            tickets.add(row.entityId);
+          }
+      }
+    }
+
+    return OutboxSnapshot(
+      pendingEventIds: pendingEvents,
+      tombstoneEventIds: tombstones,
+      pendingRoleKeys: roles,
+      pendingTicketIds: tickets,
+    );
+  }
+
+  /// Remet en `pending` les lignes restées `syncing` (cycle interrompu) afin
+  /// qu'aucune opération ne reste bloquée après une panne du moteur.
+  Future<void> resetStuckSyncing() async {
+    await (database.update(database.syncOutbox)
+          ..where((row) => row.status.equals(SyncStatus.syncing)))
+        .write(db.SyncOutboxCompanion(status: Value(SyncStatus.pending)));
   }
 }

@@ -4,8 +4,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ticketpass/core/database/database_provider.dart';
 import 'package:ticketpass/core/routing/app_router.dart';
+import 'package:ticketpass/core/sync/pull_service.dart';
+import 'package:ticketpass/core/sync/sync_engine.dart';
+import 'package:ticketpass/core/sync/sync_handlers.dart';
+import 'package:ticketpass/core/sync/sync_lifecycle.dart';
+import 'package:ticketpass/core/sync/sync_providers.dart';
+import 'package:ticketpass/core/sync/sync_store.dart';
 import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/features/auth/presentation/providers/auth_providers.dart';
+import 'package:ticketpass/features/event/data/datasources/event_remote_datasource.dart';
+import 'package:ticketpass/features/ticket/data/datasources/ticket_remote_datasource.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -33,16 +41,47 @@ Future<void> main() async {
   // Base locale (events/tickets/rôles) — ouverte AVANT le premier frame.
   final database = await openAppDatabase();
 
+  // Convergence locale ↔ Firestore (source de vérité). Le conteneur est créé
+  // explicitement pour que le lifecycle puisse, en fin de cycle, incrémenter
+  // `syncRevisionProvider` et déclencher le refetch des écrans.
+  final container = ProviderContainer(
+    overrides: [appDatabaseProvider.overrideWithValue(database)],
+  );
+  final eventsRemote = FirestoreEventRemoteDataSource();
+  final ticketsRemote = FirestoreTicketRemoteDataSource();
+  final store = SyncStore(database);
+  final engine = SyncEngine(
+    store: store,
+    handlers: SyncHandlers(events: eventsRemote, tickets: ticketsRemote),
+  );
+  final pull = PullService(
+    database: database,
+    events: eventsRemote,
+    tickets: ticketsRemote,
+    store: store,
+  );
+  final lifecycle = SyncLifecycle(
+    engine: engine,
+    pull: pull,
+    onCycleDone: () {
+      container.read(syncRevisionProvider.notifier).bump();
+    },
+  );
+
   runApp(
-    ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(database)],
-      child: MyApp(),
+    UncontrolledProviderScope(
+      container: container,
+      child: MyApp(lifecycle: lifecycle),
     ),
   );
 }
 
 class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.lifecycle});
+
+  /// Détenu par `main()` ; null dans les tests (widget tests) où la
+  /// synchronisation n'est volontairement pas démarrée.
+  final SyncLifecycle? lifecycle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
