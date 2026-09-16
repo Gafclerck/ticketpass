@@ -80,7 +80,7 @@
 
 ## Backlog (hors périmètre de cette tâche)
 
-- **Phase 5 — Offline & SyncQueue (UC12-13, UC22-23)** : table `SyncQueue` (drift), outbox, drain via `connectivity_plus`, conflits.
+- **Produit restant autour du sync** : couvrir explicitement UC12-13 / UC22-23 si leur périmètre dépasse le cœur technique livré (outbox + drain + conflits — cf. « Sprint sync »), nettoyer la doc des écrans impactés par le refetch auto.
 - **Phase 6 — Infra & qualité** : seeds réalistes par user (l'auth Firebase multi-utilisateurs est désormais FAIT — cf. « Sprint auth & identité »), chiffrement du secret de signature hors code source.
 
 ---
@@ -110,6 +110,19 @@ Bilan post-landing (détail et règles à connaître : `docs/ONBOARDING_DOMAIN_D
 
 ---
 
+## Sprint sync — offline (ex-Phase 5) — FAIT (18/09/2026)
+
+- **Objectif** : cache local drift + convergence vers Firestore (source de vérité), en **local-first** : l'app lis reste fonctionnelle hors-ligne et chaque écriture est rejouée.
+- **Périmètre livré (slice C, commits)** :
+  - **C-a (`cce271c`)** : `EventRoleModel`, `TicketModel.updatedAtMs`, `EventRemoteDataSource` (create/update merge, suppression cascade par lots 400, `assignRole` `arrayUnion`) ; `TicketRemoteDataSource` (saveGenerated/fetch/fetchMyTickets collectionGroup, `claimTicket`/`validateTicketEntry` en transaction **CAS**, rejeu idempotent, `TicketStateConflictException`) ; règles `deploy/firestore.rules` (create auth, le reste organiser/owner). **106 tests**.
+  - **C-b (`d8a713f`)** : `core/sync/sync_store.dart` — outbox `SyncOutbox`, `claimDue` (CAS anti-course), `markFailed` backoff exponentiel **2 s → 5 min**, **max 8 tentatives** puis `cancelled` ; `sync_handlers.dart` (mapping op → datasource). **121 tests**.
+  - **C-c (`85680c9`)** : enqueue outbox **dans les mêmes transactions drift** que les écritures ; `SyncEngine` (`runOnce` single-flight, conflit → `cancelled` + pull de réconciliation) ; `PullService` (upsert events `/ max(local, count)`, rôles réassemblés sans perdre les assigns pendants, suppression des absents sauf pending, **tombstones** jamais recréés, mes billets + billets staff) ; `SyncLifecycle` (auth + `connectivity_plus`, boot hors-ligne différé) ; `syncRevisionProvider` → refetch auto des FutureProviders du catalogue ; câblage `main()` (ProviderContainer + `UncontrolledProviderScope`). **141 tests**.
+  - **C-d (`6f556b0`)** : suppression du code mort (`TicketLocalDataSource`, `watchAuthStateProvider` — audit B4). **141 tests**.
+- **Décisions validées** : conflit CAS → `cancelled` + pull ; boot offline → pas de pull/drain, reprise sur reconnect ; `ticketsNumber` local = `max(local, count)` jamais écrit dans Firestore ; suppression propagée par cascade client + tombstone (un `delete` pending empêche le pull de recréer l'event).
+- **Critères d'acceptation** : `flutter analyze` 0 issue ; `flutter test` **141/141** verts — atteints le 18/09.
+
+---
+
 ## Suivi d'état
 
 | Phase | État | Validation |
@@ -120,3 +133,4 @@ Bilan post-landing (détail et règles à connaître : `docs/ONBOARDING_DOMAIN_D
 | 3 — Gestion & contrôle | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 40/40 verts |
 | 4 — Top bar + safe area | **Fait** | 13/09 — `flutter analyze` 0 issue + `flutter test` 42/42 verts |
 | Sprint auth & identité | **Fait (big-bang temporaire)** | 15/09 — `flutter analyze` 0 issue + `flutter test` 78/78 verts — correctifs d'audit B1-B4 à planifier |
+| 5 — Offline & sync (slice C) | **Fait** | 18/09 — `flutter analyze` 0 issue + `flutter test` 141/141 verts (~✓ B4 : `watchAuthStateProvider` supprimé en C-d) |

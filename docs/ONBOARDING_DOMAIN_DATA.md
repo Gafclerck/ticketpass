@@ -21,9 +21,8 @@ billets le jour J).
 - **Clean Architecture feature-first** : chaque feature = `domain/`, `data/`,
   `presentation/`. Partagé : `core/` (DS, thème, routage, sécurité, schéma DB).
 - **State management** : Riverpod. Les providers sont l'unique point d'injection.
-- **Aujourd'hui** : event/ticket viennent de **fakes en mémoire** (`MockEventRepository`, `FakeTicketRepository`) ; la base locale (drift) existe en **contrat** (`app_database.dart`, datasources abstraits) non branchée. **L'auth, elle, est en Firebase réel** (Auth + Firestore `users/{uid}` + Storage) via `FirebaseAuthRepository`. Le seul claim "fake partout" est donc faux pour `features/auth`.
-- **Backlog** : offlge SyncQueue (UC12-13), auth multi-users (UC14),
-  chiffrement du secret de signature.
+- **Aujourd'hui (post slice C)** : le cache local est **drift** (tables `Events`, `Tickets`, `EventUserRoles`, `SyncOutbox` — schemaVersion 3) branché via `DriftEventRepository`/`DriftTicketRepository`. La source de vérité est **Firestore** (`FirestoreEventRemoteDataSource`, `FirestoreTicketRemoteDataSource`, règles `deploy/firestore.rules`) : toute écriture locale enqueue une opération d'outbox dans la même transaction, `SyncEngine` la pousse (CAS + backoff, C-b/C-c), `PullService` réconcilie le cache au boot/reconnect. **L'auth, elle, est en Firebase réel** (Auth + Firestore `users/{uid}` + Storage) via `FirebaseAuthRepository`.
+- **Backlog** : couvrir les exigences produit UC12-13/UC22-23 au-delà du cœur sync livré, auth multi-users (UC14), chiffrement du secret de signature, transition `valid → invalid` à date passée.
 
 ---
 
@@ -37,14 +36,8 @@ billets le jour J).
 3. **Une action = un use case** : `class GetX { final Repo r; Future<X> call(...) }`.
    Le use case ne fait que déléguer au repo (sauf garde explicite, ex:
    `GenerateTickets` vérifie `quantity > 0`). Aucune logique Flutter dedans.
-4. **Le repo est un contrat** (interface abstraite). Le fake l'implémente. Le
-   provider Riverpod est le **seul point de bascule fake → réel** : quand le
-   sprint infra arrivera, on remplacera `FakeTicketRepository.demo()` par
-   `TicketRepositoryImpl` dans `ticket_providers.dart`, et RIEN d'autre ne
-   bougera (ni domaine, ni présentation).
-5. **Les datasources** (`TicketLocalDataSource`, `TicketRemoteDataSource`) sont
-   des **contrats abstraits non branchés**. Ne les "câble" pas avant le sprint
-   infra ; ne mets pas d'API drift/firebase dans le domaine ou les fakes.
+4. **Le repo est un contrat** (interface abstraite). L'implémentation réelle est drift (`DriftEventRepository`, `DriftTicketRepository`), injectée par le provider Riverpod. `MockEventRepository`/`FakeTicketRepository` subsistent **UNIQUEMENT comme scaffolding des tests widgets** (scan, participants, détail, édition) — aucun provider de prod ne les référence depuis le slice C.
+5. **Datasources branchées** : `FirestoreEventRemoteDataSource`/`FirestoreTicketRemoteDataSource` sont implémentées et utilisées par l'outbox et le pull (slice C). Gardes posées : chaque opération est **idempotente** (rejeu sûr) ; les transitions de billets (`claim`/`validate`) se font en **transaction CAS** et lèvent `TicketStateConflictException` en cas de divergence ; `ticketsNumber` local = `max(local, count distant)`, **jamais écrit dans Firestore**.
 
 ---
 
@@ -128,7 +121,15 @@ tout user = `participant`.
 
 ## 4. Couche DATA — état réel
 
-### 4.1 `MockEventRepository` (`event/data/repositories/mock_event_repository.dart`)
+### 4.1 `MockEventRepository` & `FakeTicketRepository` (scaffolding de tests UNIQUEMENT)
+
+Depuis le slice C, **aucun provider de prod ne les référence** : les tests
+widgets (scan, participants, détail, édition) les injectent via
+`ProviderScope(overrides:[...])`. Le niveau « rules métier » est porté par les
+repos drift (+ tests associés), les fakes ne servent qu'à alimenter des
+écrans isolés.
+
+`MockEventRepository` :
 
 - State en mémoire : `_eventsByUserId`, `_rolesByEventId`, `_catalogue`.
 - `MockEventRepository.demo()` : seed de 3 événements (`event-demo-1/2/3`)
@@ -143,7 +144,7 @@ tout user = `participant`.
 - Ne lève que des `Exception('...')` génériques (pas de types d'erreur custom) —
   garde la même convention.
 
-### 4.2 `FakeTicketRepository` (`ticket/data/repositories/fake_ticket_repository.dart`)
+`FakeTicketRepository` :
 
 - **Fake réaliste, pas un stub** : applique les règles métier (cf. §3.4) et
   simule une latence (`latency`, défaut 200ms) pour tester les états de
@@ -166,41 +167,49 @@ Seul point de (dé)sérialisation. `fromJson/toJson` (clés snake_case :
 `unique_code`, `qr_signature`, `user_id`, `event_id`), `toEntity`,
 `fromEntity`. Parle JSON/row, jamais d'API Firebase.
 
-### 4.4 Datasources abstraits (non branchés)
+### 4.4 Datasources Firestore (branchées — slice C)
 
-- `TicketLocalDataSource` (drift) : `fetchByUserId`, `fetchById`, `upsert`,
-  `delete`.
-- `TicketRemoteDataSource` (Firestore) : `fetchById`, `fetchByUserId`, `save`.
-- À implémenter au sprint infra (`*Impl`). N'invente pas d'appel firebase
-  avant ça.
+- `EventRemoteDataSource` : `createEvent` (idempotent, set-merge),
+  `updateEvent` (merge : le client conserve ses champs, seul `updated_at_ms`
+  évolue), `deleteEvent` (cascade : billets puis rôles par lots de 400, doc en
+  dernier — rejeu sur doc absent = succès), `fetchAllEvents` (tri `event_date_ms`),
+  `fetchEventById`, `fetchRoles`, `assignRole` (`arrayUnion` idempotent).
+- `TicketRemoteDataSource` : `saveGeneratedTickets`, `fetchTicket`,
+  `fetchEventTickets`, `fetchMyTickets` (**collectionGroup** — requiert le
+  index associé), `claimTicket`/`validateTicketEntry` en **transaction CAS** →
+  idempotent pour le même auteur, `TicketStateConflictException` si divergence.
+- Accès régis par `deploy/firestore.rules` (create auth, le reste organiser/owner).
 
 ### 4.5 Schéma drift (`core/database/app_database.dart`)
 
-Tables `Users`, `Events`, `Tickets`, `EventUserRoles` qui **reflètent
-exactement `docs/classe.md`** : même PK (`id`), `email`/`authId` uniques,
-`uniqueCode` unique, FK `Tickets.userId → Users.id`, `Tickets.eventId →
-Events.id`, PK composite `EventUserRoles(userId, eventId, role)`. `schemaVersion
-= 1`. **Non câblé à l'exécution** (aucun `AppDatabase()` instancié nulle part).
-À noter : il garde `password`/`authId` de `classe.md` alors que l'entité `User`
-implémentée les a retirés (auth Firebase) — écart assumé, le schéma sera
-resynchronisé au sprint infra.
+Tables `Events`, `Tickets`, `EventUserRoles` (PK/FK conformes `docs/classe.md`)
++ **`SyncOutbox`** (opérations en attente de push : `entityType`, `entityId`,
+`op`, `precondition`, `payload`, `status`, `attempts`, `nextRetryAtMs`).
+`schemaVersion = 3` (migration 2 → 3 : reset du schéma, données purgeées,
+schéma réutilisable). **Câblé au runtime dans `main()`** via `openAppDatabase()`
++ `appDatabaseProvider` (UncontrolledProviderScope ; en test : base en mémoire).
 
 ---
 
 ## 5. Câblage Riverpod — la carte
 
 Tout part de 2 providers **repos** (les seuls points de bascule du jour 1) :
-- `eventRepositoryProvider` → `MockEventRepository.demo()`
-- `ticketRepositoryProvider` → `FakeTicketRepository.demo()`
+- `eventRepositoryProvider` → `DriftEventRepository(database drift)`
+- `ticketRepositoryProvider` → `DriftTicketRepository(database drift)`
 
 Chaque use case est exposé par un `Provider<UseCase>` qui lit le repo. Les
-lectures asynchrones sont des `FutureProvider(.family)` :
+lectures asynchrones sont des `FutureProvider(.family)` ; les providers du
+catalogue (`myEventsProvider`, `discoverEventsProvider`, `myTicketsProvider`,
+`eventTicketsProvider`) `watch` **`syncRevisionProvider`** : révision incrémentée
+par `main()` à la fin de chaque cycle de sync → refetch auto, sans invalidation
+manuelle.
 
 | Provider | Type | Rôle |
 |---|---|---|
 | `currentUserProvider` | `Provider<User?>` | utilisateur courant (Firebase Auth) ; `null` si déconnecté — le `!` côté UI est garanti par le redirect du routeur |
 | `authControllerProvider` | `NotifierProvider<AuthController, User?>` | état auth + mutations (login/signUp/signOut/updateProfile) ; notifie `authRefreshListenable` |
 | `authUserRepositoryProvider` | `Provider<AuthUserRepository>` | `FirebaseAuthRepository` — l'ONLY un point d'injection auth (stub mocktail en test) |
+| `syncRevisionProvider` | `NotifierProvider<SyncRevision, int>` | révision de sync (bump par `SyncLifecycle` hors tests) |
 | `myEventsProvider(userId)` | FutureProvider.family | événements créés par le user |
 | `discoverEventsProvider` | FutureProvider | catalogue public |
 | `eventProvider(eventId)` | FutureProvider.family | détail événement |
@@ -251,7 +260,7 @@ flux asynchrone, redirect différé), pas une faille d'état.
 - `buildQrPayload` → `'$ticketId|$eventId|$signature'` (UC5, utilisé par le
   porteur, `ticket_detail_page`).
 - `verifyQrPayload` → split sur `|`, longueur 3, vérifie la signature (UC10-12,
-  offlge, utilisé par `scan_event_tickets_page`).
+  offline, utilisé par `scan_event_tickets_page`).
 - Ne modifie pas le format du payload : il est partagé entre génération et
   scan. Si tu changes `buildQrPayload`, tu casses la vérification.
 
@@ -259,17 +268,19 @@ flux asynchrone, redirect différé), pas une faille d'état.
 
 ## 7. Pièges (retour d'audit — ce qui te coûterait une régression)
 
-1. **Ne pas câbler drift/firebase maintenant** : datasources contrats, pas
-   d'implémentation. Le jour du sprint infra, on ne change QUE les providers
-   repos.
+1. **Jamais de logique drift/firebase dans le domaine ou les fakes** :
+   datasources et repos drift sont les seuls à parler SQL/Firestore. Le push
+   d'une écriture se fait **dans la même transaction drift que l'écriture
+   locale** (l'enqueue outbox et la mutation sont annulées ensemble) — enqueue
+   hors transaction = opération outbox orpheline.
 2. **Ne pas recréer UC7 (import)** : un billet ne s'obtient que par
    `acquireTicket` (UC19) depuis le détail d'un événement.
 3. **Ne jamais `Navigator.push` depuis une branche du shell** pour une page
    plein-écran : la nav flottante reste au-dessus (`StatefulShellRoute`,
    navigateur de branche). Page plein-écran = GoRoute racine + `AppShell` +
    `context.push`.
-4. **Comportement du fake ≠ implémentation 100% des règles de `classe.md`**
-   (normal pour un fake) :
+4. **Comportement des fakes ≠ implémentation réelle** (normal pour des fakes
+   de test, cf. §4.1) :
    - `invalid`/`revoked` n'ont **pas de transition de code** (le fake les seed
      seulement). Si tu écris la transition `valid → invalid` quand la date
      passe, elle reviendra probablement au sprint métier réel.
@@ -299,9 +310,9 @@ flux asynchrone, redirect différé), pas une faille d'état.
     partagé entre `AuthController` et le `GoRouter`. Routeur et état ne restent
     cohérents QUE si chaque mutation d'auth notifie. En test, **obligatoire**
     `setUp(() => resetAuthRouting())` — l'oublier rend les tests flaky.
-11. **`watchAuthStateProvider` est du code mort** : `AuthController.build()` lit
-    le repo en direct. Soit il est consommé dans `build()` (cohérence use
-    cases), soit il est supprimé.
+11. **`watchAuthStateProvider` (résolu — C-d)** : le provider était du code mort
+    (`AuthController.build()` lit le repo en direct). Il a été supprimé en C-d ;
+    le use case `WatchAuthState` reste testé au niveau domaine.
 12. **Erreurs Storage/Firestore non mappées** : `mapAuthError` ne couvre que
     `FirebaseAuthException` ; un échec d'upload d'avatar remonte en message
     générique « Une erreur est survenue. » — décision à prendre : mapper ou
@@ -309,6 +320,15 @@ flux asynchrone, redirect différé), pas une faille d'état.
 13. **`image_picker` sur desktop** : Windows est supporté (endorsed
     `file_selector`) mais `maxWidth`/`maxHeight`/`imageQuality` sont **ignorés** →
     avatars non compressés sur desktop.
+14. **Sync (slice C)** : (a) l'enqueue outbox doit rester **dans la transaction
+    drift** de la mutation ; (b) un événement supprimé localement porte une ligne
+    `event/delete` pending = **tombstone** — le pull ne doit jamais la recréer ;
+    (c) `ticketsNumber` est un compteur local monotone (`max(local, count)`),
+    jamais écrit dans Firestore ; (d) un **conflit CAS** (ex. billet déjà pris
+    ailleurs) → opération `cancelled` + pull de réconciliation, pas d'écriture
+    forcée ; (e) `SyncLifecycle` est lancé **uniquement dans `main()`**, jamais
+    en test — un test qui instancie engine/pull doit fournir sa base en mémoire
+    et un fake firestore, sans timer.
 
 ---
 
@@ -327,7 +347,7 @@ flux asynchrone, redirect différé), pas une faille d'état.
    bruts).
 3. **Validation obligatoire** (à chaque étape) :
    - `flutter analyze` → doit afficher `No issues found!` (0 issue).
-   - `flutter test` → tous verts (78 aujourd'hui).
+   - `flutter test` → tous verts (141 aujourd'hui).
    - Commit clair en une ligne, style repo : `feat(<feature>): <verbe> <objet>`
      (ex. `feat(ticket): add automatic ticket acquisition (UC19)`).
 4. **Règle d'or** : on ne commit JAMAIS si tous les tests ne passent pas.
@@ -341,18 +361,17 @@ flux asynchrone, redirect différé), pas une faille d'état.
 | Feature | Domain | Data | Présentation |
 |---|---|---|---|
 | `auth` | `User`, `Role`, `AuthUserRepository` (signIn/signUp/signOut/updateProfile/authStateChanges/currentUser) | `FirebaseAuthRepository` (Firebase Auth + Firestore `users/{uid}` + Storage avatar) | `authControllerProvider` (dérivé courant) + `currentUserProvider` + pages Login/Register/Profil + `AuthRefreshListenable` (guard du routeur) |
-| `event` | 4 entités + `EventRepository` + 8 UC | `MockEventRepository` | recherche, détail, create/edit, participants, cards |
-| `ticket` | 2 entités + `TicketRepository` + 8 UC | `FakeTicketRepository`, `TicketModel`, datasources (contrats) | wallet, détail, billet QR, liste UC6 |
+| `event` | 4 entités + `EventRepository` + 8 UC | `DriftEventRepository` (cache) + `FirestoreEventRemoteDataSource` (C-a) | recherche, détail, create/edit, participants, cards |
+| `ticket` | 2 entités + `TicketRepository` + 8 UC | `DriftTicketRepository` (cache) + `FirestoreTicketRemoteDataSource` (C-a) ; `FakeTicketRepository` (tests widgets uniquement) | wallet, détail, billet QR, liste UC6 |
 | `scan` | — (pas de domaine) | — (pas de data) | scanner caméra + saisie manuelle (providers) |
 | `home` | — | — | Home découverte |
 | `profile` | — | — | profil |
-
-Backlog infra non touché : SyncQueue/offlge (UC12-13, UC22-23), secret de signature chiffré, seeds réalistes par user.
+| `core/sync` | — (transversal) | `SyncStore` (outbox) + `SyncHandlers` + `SyncEngine` + `PullService` + `SyncLifecycle` (C-b/C-c) | `syncRevisionProvider` (refetch auto) |
 
 ## 10. Commandes utiles
 
 ```
 flutter analyze        # 0 issue obligatoire
-flutter test           # tous verts (78)
+flutter test           # tous verts (141)
 flutter test test/features/ticket/<fixe>   # test ciblé pendant le dev
 ```
