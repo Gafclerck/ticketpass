@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
+
+/// Icônes claires sur fond sombre (fond [AppColors.background] = #080808).
+const SystemUiOverlayStyle _overlayStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.light,
+  statusBarBrightness: Brightness.dark,
+);
 
 /// Thème global de l'application — unique source de vérité visuelle.
 ///
@@ -28,6 +36,9 @@ abstract class AppTheme {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: true,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: _overlayStyle,
       ),
       inputDecorationTheme: _inputDecorationTheme,
       snackBarTheme: const SnackBarThemeData(

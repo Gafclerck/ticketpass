@@ -32,7 +32,7 @@ class EventCard extends StatelessWidget {
       child: Container(
         height: 280,
         decoration: BoxDecoration(
-          // image de marque absente en mock : fond bleuté en attendant
+          // image de marque absente : fond de secours
           gradient: event.brandingUrl.isEmpty
               ? const LinearGradient(
                   begin: Alignment.topLeft,

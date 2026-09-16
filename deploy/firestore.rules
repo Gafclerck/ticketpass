@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Rôles de `uid` sur l'événement (doc events/{eventId}/roles/{uid}).
+    function roleList(eventId, uid) {
+      let doc = get(/databases/$(database)/documents/events/$(eventId)/roles/$(uid));
+      return doc.exists ? doc.data.roles : [];
+    }
+
+    function isOrganiser(eventId) {
+      return 'organiser' in roleList(eventId, request.auth.uid);
+    }
+
+    function isStaff(eventId) {
+      let roles = roleList(eventId, request.auth.uid);
+      return 'organiser' in roles || 'controller' in roles;
+    }
+
+    // ---- Profil utilisateur -----------------------------------------------
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // ---- Événements --------------------------------------------------------
+    // Posture validée : création ouverte à tout utilisateur authentifié
+    // (aucun rôle préexistant possible au moment du create sans backend).
+    // "Jamais d'événement sans créateur" : l'organisateur est posé par le
+    // client à la création ET requis pour toute modification/suppression.
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if isOrganiser(eventId);
+
+      match /roles/{userId} {
+        allow read: if isStaff(eventId);
+        allow write: if isOrganiser(eventId);
+      }
+
+      match /tickets/{ticketId} {
+        // Lecture : détenteur, billet encore libre (scan/achat), ou staff.
+        allow read: if signedIn() && (
+          resource.data.user_id == request.auth.uid
+          || resource.data.user_id == ''
+          || isStaff(eventId)
+        );
+
+        // Génération des billets (UC4) par un membre du staff.
+        allow create: if signedIn() && isStaff(eventId);
+
+        // Transitions CAS : l'état AVANT écriture est dans resource.data.
+        allow update: if signedIn() && (
+          // Acquisition (UC19) : billet libre -> attribué AU DEMANDEUR.
+          (resource.data.status == 'unused'
+            && resource.data.user_id == ''
+            && request.resource.data.status == 'valid'
+            && request.resource.data.user_id == request.auth.uid)
+          ||
+          // Validation d'entrée (UC11) : VALID -> USED par le staff.
+          (isStaff(eventId)
+            && resource.data.status == 'valid'
+            && request.resource.data.status == 'used')
+        );
+
+        allow delete: if signedIn() && isStaff(eventId);
+      }
+    }
+  }
+}

@@ -6,8 +6,9 @@ import 'package:ticketpass/core/routing/app_routes.dart';
 import 'package:ticketpass/features/auth/presentation/providers/current_user_provider.dart';
 import 'package:ticketpass/core/theme/app_colors.dart';
 import 'package:ticketpass/core/theme/app_spacing.dart';
-import 'package:ticketpass/core/theme/app_theme.dart';
 import 'package:ticketpass/core/widgets/app_button.dart';
+import 'package:ticketpass/core/widgets/app_top_bar.dart';
+import 'package:ticketpass/core/widgets/pinned_top_bar.dart';
 import 'package:ticketpass/core/widgets/empty_state.dart';
 import 'package:ticketpass/core/widgets/glass_card.dart';
 import 'package:ticketpass/core/widgets/page_header.dart';
@@ -27,80 +28,102 @@ class EventsPage extends ConsumerWidget {
     final isCreated = await context.push<bool>(AppRoutes.eventCreate);
 
     if (isCreated == true) {
-      ref.invalidate(myEventsProvider(ref.read(currentUserProvider).id));
+      final user = ref.read(currentUserProvider);
+      if (user == null) return;
+      ref.invalidate(myEventsProvider(user.id));
       ref.invalidate(discoverEventsProvider);
     }
   }
 
-  Future<void> _openEdit(
+  Future<void> _openDetail(
     BuildContext context,
     WidgetRef ref,
     Event event,
   ) async {
-    final isUpdated = await context.push<bool>(
-      '${AppRoutes.eventEdit}?id=${event.id}',
-    );
+    await context.push('${AppRoutes.eventDetail}${event.id}');
 
-    if (isUpdated == true) {
-      ref.invalidate(myEventsProvider(ref.read(currentUserProvider).id));
-      ref.invalidate(discoverEventsProvider);
-    }
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+    ref.invalidate(myEventsProvider(user.id));
+    ref.invalidate(discoverEventsProvider);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = ref.watch(currentUserProvider).id;
+    final user = ref.watch(currentUserProvider);
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SizedBox.shrink(),
+      );
+    }
+    final userId = user.id;
     final eventsAsync = ref.watch(myEventsProvider(userId));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: eventsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('Erreur : $error')),
-          data: (events) {
-            return ListView(
-              padding: AppTheme.pagePadding(
-                bottom: AppSpacing.bottomClearanceWithNav,
-              ),
-              children: [
-                PageHeader(
-                  title: 'Mes événements',
-                  subtitle: '${events.length} '
-                      '${events.length > 1 ? 'événements' : 'événement'}',
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (events.isEmpty)
-                  EmptyState(
-                    icon: Icons.add_circle_outline,
-                    title: 'Aucun événement',
-                    subtitle: 'Organisez votre premier événement et vendez '
-                        'vos billets en quelques étapes.',
-                    action: AppButton(
-                      label: 'Créer un événement',
-                      fullWidth: true,
-                      icon: Icons.add,
-                      onPressed: () => _openCreate(context, ref),
-                    ),
-                  )
-                else ...[
-                  _CreateTile(onTap: () => _openCreate(context, ref)),
-                  const SizedBox(height: AppSpacing.md),
-                  ...events.map(
-                    (event) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: EventCard(
-                        event: event,
-                        onTap: () => _openEdit(context, ref, event),
-                      ),
-                    ),
+      body: Column(
+        children: [
+          // bande opaque : le contenu scrolle sous, jamais sur les icônes
+          const AppSafeTopBand(),
+          Expanded(
+            child: eventsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) =>
+                  Center(child: Text('Erreur : $error')),
+              data: (events) {
+                return PinnedTopBar(
+                  header: PageHeader(
+                    title: 'Mes événements',
+                    subtitle:
+                        '${events.length} '
+                        '${events.length > 1 ? 'événements' : 'événement'}',
                   ),
-                ],
-              ],
-            );
-          },
-        ),
+                  body: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.pageHorizontal,
+                      0,
+                      AppSpacing.pageHorizontal,
+                      AppSpacing.bottomClearanceWithNav,
+                    ),
+                    children: [
+                      const SizedBox(height: AppSpacing.lg),
+                      if (events.isEmpty)
+                        EmptyState(
+                          icon: Icons.add_circle_outline,
+                          title: 'Aucun événement',
+                          subtitle:
+                              'Organisez votre premier événement et '
+                              'vendez vos billets en quelques étapes.',
+                          action: AppButton(
+                            label: 'Créer un événement',
+                            fullWidth: true,
+                            icon: Icons.add,
+                            onPressed: () => _openCreate(context, ref),
+                          ),
+                        )
+                      else ...[
+                        _CreateTile(onTap: () => _openCreate(context, ref)),
+                        const SizedBox(height: AppSpacing.md),
+                        ...events.map(
+                          (event) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.md,
+                            ),
+                            child: EventCard(
+                              event: event,
+                              onTap: () => _openDetail(context, ref, event),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

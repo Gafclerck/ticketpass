@@ -1,22 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ticketpass/core/database/database_provider.dart';
+import 'package:ticketpass/core/sync/sync_providers.dart';
+import 'package:ticketpass/features/ticket/domain/usecases/acquire_ticket.dart';
 import 'package:ticketpass/features/ticket/domain/usecases/generate_tickets.dart';
+import 'package:ticketpass/features/ticket/domain/usecases/get_participants.dart';
 
-import '../../data/repositories/fake_ticket_repository.dart';
+import '../../data/repositories/drift_ticket_repository.dart';
 import '../../domain/entities/ticket.dart';
 import '../../domain/repositories/ticket_repository.dart';
 import '../../domain/usecases/get_my_tickets.dart';
 import '../../domain/usecases/get_ticket.dart';
 import '../../domain/usecases/get_tickets_for_event.dart';
-import '../../domain/usecases/import_ticket.dart';
+import '../../domain/usecases/validate_ticket.dart';
 
-/// Point de bascule : demain, [TicketRepository] sera une implémentation
-/// drift/Firestore. Seul CE provider changera.
 final ticketRepositoryProvider = Provider<TicketRepository>((ref) {
-  return FakeTicketRepository.demo();
-});
-
-final importTicketProvider = Provider<ImportTicket>((ref) {
-  return ImportTicket(ref.watch(ticketRepositoryProvider));
+  return DriftTicketRepository(ref.watch(appDatabaseProvider));
 });
 
 final getTicketProvider = Provider<GetTicket>((ref) {
@@ -32,6 +30,7 @@ final myTicketsProvider = FutureProvider.family<List<Ticket>, String>((
   ref,
   userId,
 ) {
+  ref.watch(syncRevisionProvider);
   return ref.watch(getMyTicketsProvider).call(userId);
 });
 
@@ -56,5 +55,28 @@ final eventTicketsProvider = FutureProvider.family<List<Ticket>, String>((
   ref,
   eventId,
 ) {
+  ref.watch(syncRevisionProvider);
   return ref.watch(getTicketsForEventProvider).call(eventId);
+});
+
+/// UC19 — distribution automatique d'un billet.
+final acquireTicketProvider = Provider<AcquireTicket>((ref) {
+  return AcquireTicket(ref.watch(ticketRepositoryProvider));
+});
+
+final getParticipantsProvider = Provider<GetParticipants>((ref) {
+  return GetParticipants(ref.watch(ticketRepositoryProvider));
+});
+
+/// Participants d'un événement (ids des détenteurs de billets).
+final eventParticipantsProvider = FutureProvider.family<List<String>, String>((
+  ref,
+  eventId,
+) {
+  return ref.watch(getParticipantsProvider).call(eventId);
+});
+
+/// UC11 — validation d'un billet (VALID → USED).
+final validateTicketProvider = Provider<ValidateTicket>((ref) {
+  return ValidateTicket(ref.watch(ticketRepositoryProvider));
 });

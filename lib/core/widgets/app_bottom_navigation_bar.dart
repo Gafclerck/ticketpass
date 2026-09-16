@@ -42,7 +42,6 @@ class AppBottomNavigationBar extends StatelessWidget {
             children: List.generate(maListeIcon.length, (index) {
               // boolean pour voir si l'index que l'on construit est celui qui est selectionné
               final isSelected = index == currentIndex;
-              // print("mon current index est $currentIndex");
               return Container(
                 width: 52,
                 height: 52,

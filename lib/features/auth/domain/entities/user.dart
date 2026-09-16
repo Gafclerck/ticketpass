@@ -1,21 +1,21 @@
 import 'role.dart';
 
-/// Utilisateur — spec `docs/classe.md`.
+/// Utilisateur — adapté du modèle `docs/classe.md` au contexte d'authentification.
+///
+/// Écarts assumés vs le diagramme : pas de `password` (jamais stocké côté app,
+/// géré par Firebase Auth) ni d'`authId` (l'identifiant [`User.id`] est
+/// l'uid Firebase, clé du doc Firestore `users/{uid}` et `userId` partout).
 class User {
   final String id;
   final String email;
-  final String password;
   final String fullName;
   final String? profileUrl;
-  final String authId;
 
   const User({
     required this.id,
     required this.email,
-    required this.password,
     required this.fullName,
     this.profileUrl,
-    required this.authId,
   });
 
   /// Rôle "[PAR DÉFAUT] participant" — un utilisateur participe à un
@@ -25,18 +25,14 @@ class User {
   User copyWith({
     String? id,
     String? email,
-    String? password,
     String? fullName,
     String? profileUrl,
-    String? authId,
   }) {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
-      password: password ?? this.password,
       fullName: fullName ?? this.fullName,
       profileUrl: profileUrl ?? this.profileUrl,
-      authId: authId ?? this.authId,
     );
   }
 }

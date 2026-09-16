@@ -11,7 +11,23 @@ abstract class AppRoutes {
   // UC6 — liste des billets d'un événement (vue organisateur)
   static const String eventTickets = '/event/tickets/';
 
+  // Détail d'un événement (route plein-écran, hors nav)
+  static const String eventDetail = '/event/';
+
+  // Participants d'un événement (vue gestion)
+  static const String eventParticipants = '/event/participants/';
+
+  // Scanner / validation de billets (UC10-11)
+  static const String scan = '/scan/';
+
   // Pages plein-écran (hors nav) — routes racine + AppShell obligatoires
   static const String eventCreate = '/event/create';
   static const String eventEdit = '/event/edit';
+
+  // Auth — pages plein-écran (hors nav), hors StatefulShellRoute
+  static const String login = '/login';
+  static const String register = '/register';
+
+  static bool isAuthPage(String location) =>
+      location == login || location == register;
 }

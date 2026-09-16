@@ -21,7 +21,7 @@ abstract final class TicketSignatureService {
   }
 
   static String buildQrPayload(String ticketId, String eventId) {
-    return '$ticketId|${eventId}|${sign(ticketId, eventId)}';
+    return '$ticketId|$eventId|${sign(ticketId, eventId)}';
   }
 
   static bool verifyQrPayload(String payload) {
