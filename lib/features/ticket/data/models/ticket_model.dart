@@ -12,6 +12,7 @@ class TicketModel {
   final String qrSignature;
   final String userId;
   final String eventId;
+  final int updatedAtMs;
 
   const TicketModel({
     required this.id,
@@ -20,6 +21,7 @@ class TicketModel {
     required this.qrSignature,
     required this.userId,
     required this.eventId,
+    this.updatedAtMs = 0,
   });
 
   factory TicketModel.fromJson(Map<String, dynamic> json) {
@@ -28,8 +30,9 @@ class TicketModel {
       status: TicketStatus.values.byName(json['status'] as String),
       uniqueCode: json['unique_code'] as String,
       qrSignature: json['qr_signature'] as String,
-      userId: json['user_id'] as String,
+      userId: json['user_id'] as String? ?? '',
       eventId: json['event_id'] as String,
+      updatedAtMs: json['updated_at_ms'] as int? ?? 0,
     );
   }
 
@@ -41,6 +44,7 @@ class TicketModel {
       'qr_signature': qrSignature,
       'user_id': userId,
       'event_id': eventId,
+      'updated_at_ms': updatedAtMs,
     };
   }
 
@@ -56,7 +60,7 @@ class TicketModel {
     );
   }
 
-  factory TicketModel.fromEntity(Ticket ticket) {
+  factory TicketModel.fromEntity(Ticket ticket, {int updatedAtMs = 0}) {
     return TicketModel(
       id: ticket.id,
       status: ticket.status,
@@ -64,6 +68,7 @@ class TicketModel {
       qrSignature: ticket.qrSignature,
       userId: ticket.userId,
       eventId: ticket.eventId,
+      updatedAtMs: updatedAtMs,
     );
   }
 }
