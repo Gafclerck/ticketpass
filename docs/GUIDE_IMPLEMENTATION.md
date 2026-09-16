@@ -114,7 +114,7 @@ core/         tokens DS · widgets DS · routage · app shell · sync (outbox, e
 
 ## 4. Déplacements / mofidications notables du code existant
 
-- **`app_theme.dart` réécrit** + tokens créés (`app_spacing/radius/typography`), `app_colors` étendu (états, glass, success/error). Ancien `app_text_styles.dart` : **non utilisé**, à supprimer.
+- **`app_theme.dart` réécrit** + tokens créés (`app_spacing/radius/typography`), `app_colors` étendu (états, glass, success/error). Ancien `app_text_styles.dart` **supprimé** (code mort, fix final v1).
 - **`app_router.dart`** : branché sur `AppShell` ; les 4 onglets dans `StatefulShellRoute.indexedStack` ; nav bar dans un `SafeArea` ; ajout des routes racine `/event/:id` (EventDetail), `/event/participants/:id`, `/scan/:eventId`, `/event/create` et `/event/edit`.
 - **`app_bottom_navigation_bar.dart`** : inchangé structurellement (`maListeIcon` = 4 onglets).
 - **`status_badge.dart`** : déplacé de `features/ticket/.../widgets` vers `core/widgets` (générique) ; wrapper `TicketStatusBadge` côté ticket ; imports des écrans mis à jour.
@@ -162,7 +162,7 @@ core/         tokens DS · widgets DS · routage · app shell · sync (outbox, e
    - Pagination des onglets : `AppTheme.pagePadding(bottom: AppSpacing.bottomClearanceWithNav)`.
 
 **Validation**
-8. `flutter analyze` (0 issue) puis `flutter test` (141 verts).
+8. `flutter analyze` (0 issue) puis `flutter test` (140 verts).
 9. Commit par étape significative, message + fichier : `feat(<feature>): <verbe> <objet>`.
 
 ---
@@ -170,5 +170,5 @@ core/         tokens DS · widgets DS · routage · app shell · sync (outbox, e
 ## 7. Validation courante
 
 - `flutter analyze` → `No issues found!`
-- `flutter test` → tous les tests verts (UC domaine/data + sync C-b/C-c + 8 fichier widget tests dont login/register/guard, 141 tests).
+- `flutter test` → tous les tests verts (UC domaine/data + sync C-b/C-c + 8 fichier widget tests dont login/register/guard, 140 tests).
 - Lint/sorties Windows : warnings CRLF/LF bénins.

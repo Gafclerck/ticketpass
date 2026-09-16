@@ -311,8 +311,9 @@ flux asynchrone, redirect différé), pas une faille d'état.
     cohérents QUE si chaque mutation d'auth notifie. En test, **obligatoire**
     `setUp(() => resetAuthRouting())` — l'oublier rend les tests flaky.
 11. **`watchAuthStateProvider` (résolu — C-d)** : le provider était du code mort
-    (`AuthController.build()` lit le repo en direct). Il a été supprimé en C-d ;
-    le use case `WatchAuthState` reste testé au niveau domaine.
+     (`AuthController.build()` lit le repo en direct). Il a été supprimé en C-d,
+     puis le use case `WatchAuthState` lui-même (fix final v1) : l'état auth passe
+     exclusivement par `current_user_provider`.
 12. **Erreurs Storage/Firestore non mappées** : `mapAuthError` ne couvre que
     `FirebaseAuthException` ; un échec d'upload d'avatar remonte en message
     générique « Une erreur est survenue. » — décision à prendre : mapper ou
@@ -347,7 +348,7 @@ flux asynchrone, redirect différé), pas une faille d'état.
    bruts).
 3. **Validation obligatoire** (à chaque étape) :
    - `flutter analyze` → doit afficher `No issues found!` (0 issue).
-   - `flutter test` → tous verts (141 aujourd'hui).
+   - `flutter test` → tous verts (140 aujourd'hui).
    - Commit clair en une ligne, style repo : `feat(<feature>): <verbe> <objet>`
      (ex. `feat(ticket): add automatic ticket acquisition (UC19)`).
 4. **Règle d'or** : on ne commit JAMAIS si tous les tests ne passent pas.
@@ -372,6 +373,6 @@ flux asynchrone, redirect différé), pas une faille d'état.
 
 ```
 flutter analyze        # 0 issue obligatoire
-flutter test           # tous verts (141)
+flutter test           # tous verts (140)
 flutter test test/features/ticket/<fixe>   # test ciblé pendant le dev
 ```

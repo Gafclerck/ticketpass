@@ -21,7 +21,7 @@ import 'package:ticketpass/features/event/presentation/widgets/event_card.dart';
 
 /// Onglet Découverte — spec `FLUTTER_PROTOTYPE_SPEC.md` §8 « HomeScreen ».
 ///
-/// Bandeau + segment Buy/Sell/Create + recherche + filtres par catégorie
+/// Bandeau + segment Buy/Create + recherche + filtres par catégorie
 /// + liste d'événements (EventCard).
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});

@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ticketpass/core/routing/app_router.dart';
 import 'package:ticketpass/core/security/ticket_signature_service.dart';
-import 'package:ticketpass/features/event/data/repositories/mock_event_repository.dart';
+import '../../helpers/mock_event_repository.dart';
 import 'package:ticketpass/features/event/domain/entities/event.dart';
 import 'package:ticketpass/features/event/domain/entities/event_status.dart';
 import 'package:ticketpass/features/event/domain/entities/event_type.dart';
 import 'package:ticketpass/features/event/presentation/providers/event_providers.dart';
 import 'package:ticketpass/features/scan/presentation/providers/scan_providers.dart';
-import 'package:ticketpass/features/ticket/data/repositories/fake_ticket_repository.dart';
+import '../../helpers/fake_ticket_repository.dart';
 import 'package:ticketpass/features/ticket/presentation/providers/ticket_providers.dart';
 import '../../helpers/test_auth.dart';
 

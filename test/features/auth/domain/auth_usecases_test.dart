@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:ticketpass/features/auth/domain/entities/user.dart';
@@ -8,7 +6,6 @@ import 'package:ticketpass/features/auth/domain/usecases/sign_in.dart';
 import 'package:ticketpass/features/auth/domain/usecases/sign_out.dart';
 import 'package:ticketpass/features/auth/domain/usecases/sign_up.dart';
 import 'package:ticketpass/features/auth/domain/usecases/update_profile.dart';
-import 'package:ticketpass/features/auth/domain/usecases/watch_auth_state.dart';
 
 class _AuthUserRepositoryStub extends Mock implements AuthUserRepository {}
 
@@ -80,22 +77,6 @@ void main() {
       await SignOut(repository).call();
 
       verify(() => repository.signOut()).called(1);
-    });
-  });
-
-  group('WatchAuthState — délègue au repository', () {
-    test('retourne le flux d’authentification (null = déconnecté)', () async {
-      final repository = _AuthUserRepositoryStub();
-      final controller = StreamController<User?>();
-      when(() => repository.authStateChanges()).thenAnswer((_) => controller.stream);
-
-      final stream = WatchAuthState(repository).call();
-
-      final matcher = expectLater(stream, emitsInOrder([null, _user]));
-      controller.add(null);
-      controller.add(_user);
-      await controller.close();
-      await matcher;
     });
   });
 

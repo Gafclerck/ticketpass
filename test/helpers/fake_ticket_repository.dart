@@ -1,9 +1,8 @@
 import 'package:ticketpass/core/security/ticket_signature_service.dart';
+import 'package:ticketpass/features/ticket/domain/entities/ticket.dart';
+import 'package:ticketpass/features/ticket/domain/entities/ticket_status.dart';
+import 'package:ticketpass/features/ticket/domain/repositories/ticket_repository.dart';
 import 'package:uuid/uuid.dart';
-
-import '../../domain/entities/ticket.dart';
-import '../../domain/entities/ticket_status.dart';
-import '../../domain/repositories/ticket_repository.dart';
 
 /// Implémentation fake (en mémoire) du dépôt de billets.
 ///
@@ -12,6 +11,10 @@ import '../../domain/repositories/ticket_repository.dart';
 /// inconnus/déjà utilisés) et simule une latence réseau contrôlable.
 /// L'import de billet (UC7) a été retiré : seuls `generateTickets` (UC4) et
 /// `acquireTicket` (UC19) créent/attribuent des billets.
+///
+/// Scaffolding des tests widgets uniquement — aucun provider de prod ne le
+/// référence. Le repo de production est `DriftTicketRepository` (drift +
+/// Firestore, slice C).
 class FakeTicketRepository implements TicketRepository {
   final List<Ticket> _tickets;
 

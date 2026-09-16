@@ -1,15 +1,15 @@
-import '../../domain/entities/event.dart';
-import '../../domain/entities/event_status.dart';
-import '../../domain/entities/event_type.dart';
-import '../../domain/entities/event_user_role.dart';
-import '../../domain/repositories/event_repository.dart';
-import '../../../auth/domain/entities/role.dart';
+import 'package:ticketpass/features/auth/domain/entities/role.dart';
+import 'package:ticketpass/features/event/domain/entities/event.dart';
+import 'package:ticketpass/features/event/domain/entities/event_status.dart';
+import 'package:ticketpass/features/event/domain/entities/event_type.dart';
+import 'package:ticketpass/features/event/domain/entities/event_user_role.dart';
+import 'package:ticketpass/features/event/domain/repositories/event_repository.dart';
 
 /// Implémentation fake (en mémoire) du dépôt d'événements.
 ///
-/// Point de bascule : sera remplacée par `EventRepositoryImpl` (drift +
-/// Firestore) au sprint d'infrastructure, SANS toucher au domaine ni à la
-/// présentation.
+/// Scaffolding des tests widgets uniquement — aucun provider de prod ne le
+/// référence. Le repo de production est `DriftEventRepository` (drift +
+/// Firestore, slice C).
 class MockEventRepository implements EventRepository {
   final Map<String, List<Event>> _eventsByUserId = {};
   final Map<String, List<EventUserRole>> _rolesByEventId = {};

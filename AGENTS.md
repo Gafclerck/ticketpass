@@ -15,7 +15,7 @@ Ensuite on recommence le même cycle sur l'écran suivant.
 
 ## Commandes
 - `flutter analyze` — vérification statique (doit rester à 0 issue).
-- `flutter test` — suite complète (141 tests : UC domaine/data + sync C-a→C-d + widget tests).
+- `flutter test` — suite complète (140 tests : UC domaine/data + sync C-a→C-d + widget tests).
 
 ## Structuration
 - Entités conformes à `docs/classe.md` ; use cases côté domaine ; data = repos **drift** (`DriftEventRepository`, `DriftTicketRepository`, cache) + datasources **Firestore** (`FirestoreEventRemoteDataSource`, `FirestoreTicketRemoteDataSource`) ; présentation = Riverpod + widgets DS dans `lib/core/theme` et `lib/core/widgets`.

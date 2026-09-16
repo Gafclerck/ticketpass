@@ -119,7 +119,7 @@ Bilan post-landing (détail et règles à connaître : `docs/ONBOARDING_DOMAIN_D
   - **C-c (`85680c9`)** : enqueue outbox **dans les mêmes transactions drift** que les écritures ; `SyncEngine` (`runOnce` single-flight, conflit → `cancelled` + pull de réconciliation) ; `PullService` (upsert events `/ max(local, count)`, rôles réassemblés sans perdre les assigns pendants, suppression des absents sauf pending, **tombstones** jamais recréés, mes billets + billets staff) ; `SyncLifecycle` (auth + `connectivity_plus`, boot hors-ligne différé) ; `syncRevisionProvider` → refetch auto des FutureProviders du catalogue ; câblage `main()` (ProviderContainer + `UncontrolledProviderScope`). **141 tests**.
   - **C-d (`6f556b0`)** : suppression du code mort (`TicketLocalDataSource`, `watchAuthStateProvider` — audit B4). **141 tests**.
 - **Décisions validées** : conflit CAS → `cancelled` + pull ; boot offline → pas de pull/drain, reprise sur reconnect ; `ticketsNumber` local = `max(local, count)` jamais écrit dans Firestore ; suppression propagée par cascade client + tombstone (un `delete` pending empêche le pull de recréer l'event).
-- **Critères d'acceptation** : `flutter analyze` 0 issue ; `flutter test` **141/141** verts — atteints le 18/09.
+- **Critères d'acceptation** : `flutter analyze` 0 issue ; `flutter test` verts — **141/141** au 18/09, **140/140** après le fix final v1 (suppression du code mort `WatchAuthState` + déplacement des fakes dans `test/helpers`).
 
 ---
 
